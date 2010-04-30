@@ -1873,6 +1873,7 @@ Java.pkg.install() {
 	fi
 	FILENAME=$(echo "${CHECKSUMPAGE}" | fgrep jdk-freebsd${OSMAJORVERSION}.${ARCH} | cut -d'>' -f 2 | cut -d'<' -f 1)
 	if [ -z "${CHECKSUMPAGE}" -o -z "${FILENAME}" ]; then
+		System.print info "Filename: "$FILENAME
 		System.print.error "faild to parse filename, maybe there is no java for your arch or it can be network error"
 		exit 1
 	fi
