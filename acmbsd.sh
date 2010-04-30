@@ -219,7 +219,7 @@ Network.getInterfaceByIP() {
 	done
 }
 Network.cvs.fetch() {
-	if cvs -d :pserver:guest:guest@cvs.myx.ru:/var/ae3 -fq -z 6 checkout -d acmbsd ae3/distribution/acm.cm5/bsd/acmbsd; then
+	if cvs -d :pserver:guest:guest@cvs.myx.ru:$1 -fq -z 6 checkout -d $2 $3; then
 		return 0
 	else
 		return 1
