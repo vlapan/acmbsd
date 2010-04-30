@@ -1866,14 +1866,14 @@ Java.pkg.install() {
 	echo -n "Getting checksum page from 'www.freebsdfoundation.org'..."
 	CHECKSUMPAGE=$(curl -s http://www.freebsdfoundation.org/downloads/checksum.shtml)
 	System.print.status green "DONE"
-	if [ ${OSMAJORVERSION} == "8" ]; then
+	if [ "${OSMAJORVERSION}" = "8" ]; then
 		OSVERSION=7
 	else
 		OSVERSION=${OSMAJORVERSION}
 	fi
-	FILENAME=$(echo "${CHECKSUMPAGE}" | fgrep jdk-freebsd${OSMAJORVERSION}.${ARCH} | cut -d'>' -f 2 | cut -d'<' -f 1)
+	FILENAME=$(echo "${CHECKSUMPAGE}" | fgrep jdk-freebsd${OSVERSION}.${ARCH} | cut -d'>' -f 2 | cut -d'<' -f 1)
 	if [ -z "${CHECKSUMPAGE}" -o -z "${FILENAME}" ]; then
-		System.print info "Filename: "$FILENAME
+		System.print.info "Filename: "$FILENAME
 		System.print.error "faild to parse filename, maybe there is no java for your arch or it can be network error"
 		exit 1
 	fi
