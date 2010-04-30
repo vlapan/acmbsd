@@ -219,7 +219,7 @@ Network.getInterfaceByIP() {
 	done
 }
 Network.cvs.fetch() {
-	if cvs -d :pserver:guest:guest@${CVSREPO}:$1 -fq -z 6 checkout -d $2 $3; then
+	if cvs -d :pserver:guest:guest@cvs.myx.ru:/var/ae3 -fq -z 6 checkout -d acmbsd ae3/distribution/acm.cm5/bsd/acmbsd; then
 		return 0
 	else
 		return 1
@@ -1866,6 +1866,11 @@ Java.pkg.install() {
 	echo -n "Getting checksum page from 'www.freebsdfoundation.org'..."
 	CHECKSUMPAGE=$(curl -s http://www.freebsdfoundation.org/downloads/checksum.shtml)
 	System.print.status green "DONE"
+	if [ ${OSMAJORVERSION} == "8" ]; then
+		OSVERSION=7
+	else
+		OSVERSION=${OSMAJORVERSION}
+	fi
 	FILENAME=$(echo "${CHECKSUMPAGE}" | fgrep jdk-freebsd${OSMAJORVERSION}.${ARCH} | cut -d'>' -f 2 | cut -d'<' -f 1)
 	if [ -z "${CHECKSUMPAGE}" -o -z "${FILENAME}" ]; then
 		System.print.error "faild to parse filename, maybe there is no java for your arch or it can be network error"

@@ -2,13 +2,21 @@ ACMBSD automation script for ACMCMS on FreeBSD OS
 
 1. Install
 
+
+1.1 Get script
+
+*Method 1. CVS
+cvs -d :pserver:guest:guest@cvs.myx.ru:/var/ae3 -fq -z 6 checkout -d acmbsd ae3/distribution/acm.cm5/bsd/acmbsd
+
+*Method 2. GIT
 Requirements: FreeBSD, Port Tree
-
 cd /usr/ports/devel/git && make install clean
-
 git clone git://vlapan.com/acmbsd.git
+
+*Information below used for both methods
 cd acmbsd
-/bin/sh acmbsd preparebsd
+/bin/sh acmbsd preparebsd # install ports and configure system
+
 
 if you use FreeBSD above 7 you need to install java by yourself
 
