@@ -336,11 +336,11 @@ killbylockfile() {
 }
 scriptlink() {
 	if [ -e "${2}" ]; then
-		System.message "Link '${2}' script to '${1}'..." waitstatus
+		System.message "Link '${2}' to '${1}'..." waitstatus
 		ln -f ${2} ${1}
 		System.print.status green "DONE"
 		System.message "Change rights for '${1}'..." waitstatus
-		chmod 770 ${1} 
+		chmod 0775 ${1} 
 		System.print.status green "DONE"
 	fi
 }
@@ -377,9 +377,14 @@ System.changeRights() {
 		System.print.error "no group '${2}'!"
 		return 1
 	fi
-	System.message "Modifying FS rights (dir:${1},user:${3},group:${2},rights:0770)..." waitstatus
+	if [ "${4}" ]; then
+		RIGHTS=${4}
+	else
+		RIGHTS=0770
+	fi
+	System.message "Modifying FS rights (dir:${1},user:${3},group:${2},rights:${RIGHTS})..." waitstatus
 #change to find
-	chown -R ${3}:${2} ${1} && chmod -R 0770 ${1}
+	chown -R ${3}:${2} ${1} && chmod -R ${RIGHTS} ${1}
 	System.print.status green DONE && return 0
 }
 cvsacmcm() {
@@ -737,7 +742,7 @@ Group.create() {
 			local OPTS="\${1}"
 			local EXTIP=\$(Function.getSettingValue extip "\${OPTS}" || Console.getSettingValue extip)
 			test "\${EXTIP}" && ${THIS}.setExtIP \${EXTIP}
-			${THIS}.setPublicIP \$(Function.getSettingValue publicip "\${OPTS}" || Console.getSettingValue publicip || ${THIS}.getGroupType)
+			${THIS}.setPublicIP \$(Function.getSettingValue publicip "\${OPTS}" || Console.getSettingValue publicip || echo \${EXTIP})
 			${THIS}.setGroupType \$(Function.getSettingValue type "\${OPTS}" || Console.getSettingValue type || ${THIS}.getGroupType)
 			${THIS}.setMemory \$(Function.getSettingValue memory "\${OPTS}" || Console.getSettingValue memory || ${THIS}.getMemory)
 			${THIS}.setBranch \$(Function.getSettingValue branch "\${OPTS}" || Console.getSettingValue branch || ${THIS}.getBranch)
@@ -947,7 +952,7 @@ Group.create() {
 			System.changeRights ${STATIC_PROTECTED} ${THIS} ${THIS}1 || return 1
 			System.changeRights ${STATIC_LOGS} ${THIS} ${THIS}1 || return 1
 			System.changeRights ${STATIC_PUBLIC} ${THIS} ${THIS}1 || return 1
-			chown :${THIS} ${STATIC_HOME} && chmod 0750 ${STATIC_HOME}
+			System.changeRights ${STATIC_HOME} ${THIS} ${THIS}1 || return 1
 		}
 		${THIS}.add() {
 			local OPTS="\$(echo \$@ | tr ' ' '\n')"
@@ -1221,7 +1226,7 @@ Instance.create() {
 				/bin/rm ${STATIC_RESTARTFILE}
 			fi
 			ipcontrol bind lo0 ${STATIC_INTIP}
-			${THIS}.startDaemon
+			${THIS}.startDaemon || return 1
 			System.message 'Waiting for instance to start' waitstatus
 			local COUNT=0
 			local CANFAIL=true
@@ -1447,7 +1452,7 @@ Group.static() {
 		echo "${1}" | fgrep -w 'live' > /dev/null 2>&1 && echo 'disable' || echo 'enable'
 	}
 	Group.default.branch(){
-		echo "${1}" | fgrep -w 'live' && echo 'release' || echo 'current'
+		echo "${1}" | fgrep -w 'live' > /dev/null 2>&1 && echo 'release' || echo 'current'
 	}
 	Group.reset() {
 		rm -rdf ${PROTECTED}/boot.properties
@@ -1868,6 +1873,8 @@ Java.pkg.install() {
 	System.print.status green "DONE"
 	if [ "${OSMAJORVERSION}" = "8" ]; then
 		OSVERSION=7
+		echo "[/usr/local/diablo-jdk1.6.0/]" > /etc/libmap.conf
+		echo "libz.so.4               libz.so.5" >> /etc/libmap.conf
 	else
 		OSVERSION=${OSMAJORVERSION}
 	fi
@@ -2455,8 +2462,11 @@ Named.reload() {
 	if ! cat ${NAMEDCONFFILE} | grep mainoptions > /dev/null 2>&1; then
 		EXTIPS=$(Config.setting.getValue "extip")
 		EXTIPS=$(echo ${EXTIPS} | sed "s/,/;/" | sed "s/ /;/")
+		if [ "${EXTIPS}" ]; then
+			EXTIPS="${EXTIPS};"
+		fi
 # transfers auto lookup
-		NAMEDCONF="options {directory \"/etc/namedb\";pid-file \"/var/run/named/pid\";allow-transfer {82.179.192.192;82.179.193.193;};dump-file \"/var/dump/named_dump.db\";statistics-file \"/var/stats/named.stats\";listen-on {127.0.0.1;${EXTIPS};};}; // generatedoptions\n"
+		NAMEDCONF="options {directory \"/etc/namedb\";pid-file \"/var/run/named/pid\";allow-transfer {82.179.192.192;82.179.193.193;};dump-file \"/var/dump/named_dump.db\";statistics-file \"/var/stats/named.stats\";listen-on {127.0.0.1;${EXTIPS}};}; // generatedoptions\n"
 	fi
 
 	rm -f ${ZONEDIR}/*
@@ -2510,6 +2520,10 @@ Syntax.getStatus() {
 	else
 		System.print.error "no groups exist!"
 	fi
+}
+Syntax.checksites() {
+	Syntax.getStatus
+	System.print.syntax "dnsreload ( all | {groupname} )"
 }
 Syntax.start() {
 	Syntax.getStatus
@@ -2967,7 +2981,14 @@ case ${COMMAND} in
 		fi
 		setParametrsToVars GROUPNAME
 		if Group.create ${GROUPNAME} && ! ${GROUPNAME}.isExist; then
-			${GROUPNAME}.add
+			if ! echo ${SETTINGS} | grep extip && [ "$(Network.getFreeIPList)" ]; then
+				for ITEM in $(Network.getFreeIPList); do
+					${GROUPNAME}.add -extip=${ITEM}
+					break
+				done
+			else
+				${GROUPNAME}.add
+			fi
 			System.print.info "group '${GROUPNAME}' are added, you can change group setting by '${SCRIPTNAME} config ${GROUPNAME}'!"
 		else
 			printf "Settings info:\n"
@@ -2979,7 +3000,7 @@ case ${COMMAND} in
 			printf "Free groups: \33[1m${FREEGROUPS}\33[0m\n"
 			printf "Free IP-addresses: \33[1m$(Network.getFreeIPList)\33[0m\n"
 			echo
-			printf "Example: ${SCRIPTNAME} ${COMMAND} {groupname} [-extip=192.168.1.1] [-branch=release] [-memory=512m] [-type=standard]\n"
+			printf "Example: ${SCRIPTNAME} ${COMMAND} {groupname} -extip=192.168.1.1 [-branch=release] [-memory=512m] [-type=standard]\n"
 		fi
 		return 0
 	;;
@@ -3248,6 +3269,8 @@ case ${COMMAND} in
 	install)
 		System.message "Command '${COMMAND}' running" no "[${COMMAND}]"
 		System.fs.dir.create ${ACMBSDPATH}
+		System.fs.dir.create ${DEFAULTGROUPPATH}
+		System.changeRights ${DEFAULTGROUPPATH} acmbsd acmbsd 0775
 		paramcheck /etc/rc.conf postgresql_enable=\"YES\"
 		System.message "Check for '/usr/local/pgsql/data" waitstatus
 		if [ -d /usr/local/pgsql/data ] ; then
@@ -3266,7 +3289,7 @@ case ${COMMAND} in
 			System.message "Running 'acmbsd update all'..."
 			${0} update all
 		fi
-		scriptlink "acmbsd" "${ACMBSDPATH}/scripts/acmbsd.sh"
+		scriptlink "/usr/local/bin/acmbsd" "${ACMBSDPATH}/scripts/acmbsd.sh"
 		scriptlink "/usr/local/etc/rc.d/rcacm.sh" "${ACMBSDPATH}/scripts/rcacm.sh"
 		Watchdog.restart
 		echo

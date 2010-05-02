@@ -2,6 +2,9 @@ ACMBSD automation script for ACMCMS on FreeBSD OS
 
 1. Install
 
+First you need install FreeBSD 
+Do next sections after you get terminal access
+
 1.1 Get script
 
 *Method 1. CVS
