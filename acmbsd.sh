@@ -775,14 +775,14 @@ Group.create() {
 						return 1
 					else
 						if echo \${OPTIONS} | fgrep -w auto > /dev/null 2>&1 ; then
-							System.print.error 'major version or type are different, can not update in automatic mode'
+							System.print.error 'major version or type is different, can not update in automatic mode'
 							return 0
 						else
 							if echo \${OPTIONS} | fgrep -w agree > /dev/null 2>&1; then
 								echo ":3.2:as you wish"
 								return 1
 							else
-								System.print.info 'major version are different or alpha version in branch, to update run again with -agree option!'
+								System.print.info 'major version is different or alpha version in branch, to update run again with -agree option!'
 								return 0
 							fi
 						fi
@@ -2610,7 +2610,7 @@ SCRIPTNAME="acmbsd"
 GROUPSNAME="devel test live temp"
 RUNSTR="$0 $@"
 COMMAND=${1}
-VERSION=125
+VERSION=126
 
 COMMENTEDCOMMANDS=$(cat ${0} | fgrep -A1 '#COMMAND:' | fgrep -v fgrep)
 COMMANDS=$(echo "${COMMENTEDCOMMANDS}" | fgrep -oE '\b[a-z]*\)?\b')
@@ -2989,7 +2989,7 @@ case ${COMMAND} in
 			else
 				${GROUPNAME}.add
 			fi
-			System.print.info "group '${GROUPNAME}' are added, you can change group setting by '${SCRIPTNAME} config ${GROUPNAME}'!"
+			System.print.info "group '${GROUPNAME}' is added, you can change group setting by '${SCRIPTNAME} config ${GROUPNAME}'!"
 		else
 			printf "Settings info:\n"
 			printf "\t-extip=192.168.1.1 - IP-address that not used by acm.cm already\n"
