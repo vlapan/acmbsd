@@ -1200,6 +1200,7 @@ Instance.create() {
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.ip.wildcard.host=${STATIC_INTIP}"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.ip.shift.port=14000"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.private=${STATIC_HOME}"
+			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.shared=${BACKUPPATH}"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.protected=\$(${GROUPNAME}.getField PROTECTED)"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.logs=${GROUPLOGS}"
 			ADMINMAIL=\$(Config.setting.getValue adminmail)
