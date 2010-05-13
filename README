@@ -30,5 +30,21 @@ cd acmbsd
 1.4 Add new group of instances
 acmbsd add live
 
-1.5 Start group of instances
+1.5 Configure system and group
+To see command syntax and available group list execute this command:
+acmbsd config
+
+Change manager email address:
+acmbsd config system -email=user@example.net
+
+Check other system settings:
+acmbsd config system
+
+Change available memory:
+acmbsd config live -memory=640m
+
+Check other group settings:
+acmbsd config live
+
+1.6 Start group of instances
 acmbsd start live
