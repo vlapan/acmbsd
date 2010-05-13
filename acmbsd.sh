@@ -366,6 +366,9 @@ pkgcheck(){
 	fi
 }
 System.changeRights(){
+	OPTS="$@"
+	local RSTR=`Function.getSettingValue recursive "$OPTS"`
+	local REQURSIVE=`([ $RSTR ] && [ $RSTR = 'false' -o $RSTR = 'no' -o $RSTR = 0 ]) || echo '-R'`
 	if [ ! -d "$1" -o -z "$2" ]; then
 		return 1
 	fi
@@ -382,9 +385,9 @@ System.changeRights(){
 	else
 		RIGHTS=0770
 	fi
-	System.message "Modifying FS rights (dir:${1},user:${3},group:${2},rights:${RIGHTS})..." waitstatus
+	System.message "Modifying FS rights (dir:$1,user:$3,group:$2,rights:$RIGHTS,o:$REQURSIVE)..." waitstatus
 #change to find
-	chown -R ${3}:${2} ${1} && chmod -R ${RIGHTS} ${1}
+	chown $REQURSIVE $3:$2 $1 && chmod $REQURSIVE $RIGHTS $1
 	System.print.status green DONE && return 0
 }
 cvsacmcm(){
@@ -3267,10 +3270,10 @@ case ${COMMAND} in
 	;;
 	#COMMAND:INFREQ
 	install)
-		System.changeRights ${DEFAULTGROUPPATH} acmbsd acmbsd 0775
 		System.message "Command '$COMMAND' running" no "[$COMMAND]"
 		System.fs.dir.create $ACMBSDPATH
 		System.fs.dir.create $DEFAULTGROUPPATH
+		System.changeRights $DEFAULTGROUPPATH acmbsd acmbsd 0775 -recursive=false
 		paramcheck /etc/rc.conf postgresql_enable=\"YES\"
 		System.message "Check for '/usr/local/pgsql/data" waitstatus
 		if [ -d /usr/local/pgsql/data ]; then
