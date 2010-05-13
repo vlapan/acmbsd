@@ -1701,7 +1701,8 @@ Watchdog.command() {
 	done
 }
 Network.message.send() {
-	ADMINMAIL=$(Config.setting.getValue "adminmail")
+	OPTS=$@
+	ADMINMAIL=$(Function.getSettingValue email "$OPTS" || Config.setting.getValue adminmail)
 	if [ "$ADMINMAIL" ]; then
 		for EMAIL in $ADMINMAIL; do
 			printf "To: ${EMAIL}\n" > /tmp/msg.html
@@ -3048,6 +3049,7 @@ case ${COMMAND} in
 				Report.groups | elinks -dump-width 200 -dump
 			;;
 			*)
+				System.print.info "paths: acmbsd - $ACMBSDPATH, groups - $DEFAULTGROUPPATH, shared - $BACKUPPATH"
 				System.print.syntax "status (system | ipnat | domains | daemons | connections | diskusage | groups | fullreport)"
 				exit 1
 			;;
@@ -3233,7 +3235,8 @@ case ${COMMAND} in
 						-email)
 							PASTVALUE=${ADMINMAIL}
 							Config.setting.setValue "adminmail" "${VALUE}"
-							System.print.info "Value of 'email' setting has changed from '${PASTVALUE}' to '${VALUE}'"
+							Network.message.send "PASTVALUE:'$PASTVALUE'\r\nVALUE:'$VALUE'" "administrator's email changed" plain -email=$PASTVALUE,$VALUE
+							System.print.info "Value of 'email' setting has changed from '$PASTVALUE' to '$VALUE'"
 							checkmailaliases
 						;;
 						-autotime)
