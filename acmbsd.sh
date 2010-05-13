@@ -334,7 +334,7 @@ killbylockfile() {
 		System.print.error "Unable to find lock file (${1})"
 	fi
 }
-scriptlink() {
+scriptlink(){
 	if [ -e "${2}" ]; then
 		System.message "Link '${2}' to '${1}'..." waitstatus
 		ln -f ${2} ${1}
@@ -344,7 +344,7 @@ scriptlink() {
 		System.print.status green "DONE"
 	fi
 }
-pkgcheck() {
+pkgcheck(){
 	if [ -z "${PKGINFO}" ]; then
 		PKGINFO=$(pkg_info)
 	fi
@@ -353,32 +353,32 @@ pkgcheck() {
 		System.print.status green "FOUND"
 	else
 		System.print.status yellow "NOT FOUND"
-		System.message "Installing ${1}..."
+		System.message "Installing $1..."
 		cd /usr/ports/${2} && make clean && make install clean
-		System.message "Check for ${1}..." waitstatus
+		System.message "Check for $1..." waitstatus
 		PKGINFO=$(pkg_info)
-		if echo "${PKGINFO}" | grep ${1} > /dev/null 2>&1 ; then
-			System.print.status green "FOUND"
+		if echo "${PKGINFO}" | grep $1 > /dev/null 2>&1 ; then
+			System.print.status green FOUND
 		else
-			System.print.status red "ERROR"
+			System.print.status red ERROR
 			exit 1
 		fi
 	fi
 }
-System.changeRights() {
-	if [ ! -d "${1}" -o -z "${2}" ]; then
+System.changeRights(){
+	if [ ! -d "$1" -o -z "$2" ]; then
 		return 1
 	fi
-	if ! pw usershow ${3} > /dev/null 2>&1; then
-		System.print.error "no user '${3}'!"
+	if ! pw usershow $3 > /dev/null 2>&1; then
+		System.print.error "no user '$3'!"
 		return 1
 	fi
-	if ! pw groupshow ${2} > /dev/null 2>&1; then
-		System.print.error "no group '${2}'!"
+	if ! pw groupshow $2 > /dev/null 2>&1; then
+		System.print.error "no group '$2'!"
 		return 1
 	fi
-	if [ "${4}" ]; then
-		RIGHTS=${4}
+	if [ $4 ]; then
+		RIGHTS=$4
 	else
 		RIGHTS=0770
 	fi
@@ -387,15 +387,15 @@ System.changeRights() {
 	chown -R ${3}:${2} ${1} && chmod -R ${RIGHTS} ${1}
 	System.print.status green DONE && return 0
 }
-cvsacmcm() {
-	ONLYCHECK=${3}
-	System.fs.dir.create ${ACMCM5PATH} > /dev/null 2>&1
-	cd ${ACMCM5PATH}
-	System.message "Fetching ACM.CM5 (sys-${1}) version..." waitstatus
-	if Network.cvs.fetch /var/share tmp export/sys-${1}/version/version > /dev/null 2>&1 ; then
-		System.print.status green "DONE"
+cvsacmcm(){
+	ONLYCHECK=$3
+	System.fs.dir.create $ACMCM5PATH > /dev/null 2>&1
+	cd $ACMCM5PATH
+	System.message "Fetching ACM.CM5 (sys-$1) version..." waitstatus
+	if Network.cvs.fetch /var/share tmp export/sys-$1/version/version > /dev/null 2>&1 ; then
+		System.print.status green DONE
 	else
-		System.print.status red "FAILED"
+		System.print.status red FAILED
 		RETVAL=1
 	fi
 	if [ -f tmp/version ]; then
@@ -911,7 +911,7 @@ Group.create() {
 				sleep 3
 				Function.isExist \${ACTIVEINSTANCES}.isObject || Instance.create \${ACTIVEINSTANCES}
 				\${ACTIVEINSTANCES}.stop "cooldown"
-				Network.message.send2 "\$(\${ACTIVEINSTANCES}.getField OUTPREV)" "${THIS}: restarted successfully" "ACM.CMS outprev for you"
+				Network.message.send2 "\$(\${ACTIVEINSTANCES}.getField OUTPREV)" "${THIS}: restarted successfully" "Previous ACM.CMS standard output follows:\r\n\r\n"
 			else
 				System.print.error "can not start second instance!"
 				Network.message.send2 "\$(\${START}.getField OUT)" "${THIS}: error while restarting" "ACM.CMS out for you"
@@ -1346,27 +1346,27 @@ System.cooldown() {
 }
 Group.static() {
 	Group.updateAll() {
-		for GROUPNAME in ${GROUPS} ; do
-			Group.create ${GROUPNAME} && ${GROUPNAME}.isExist && ${GROUPNAME}.update
+		for GROUPNAME in $GROUPS; do
+			Group.create $GROUPNAME && $GROUPNAME.isExist && $GROUPNAME.update
 		done
 	}
 	Group.startAll() {
 		for GROUPNAME in ${1} ; do
-			Group.create ${GROUPNAME} && ${GROUPNAME}.isExist && ${GROUPNAME}.start
+			Group.create $GROUPNAME && $GROUPNAME.isExist && $GROUPNAME.start
 		done
 		Watchdog.check
 	}
 	Group.stopAll() {
-		for GROUPNAME in ${1}; do
-			Group.create ${GROUPNAME} && ${GROUPNAME}.isExist && ${GROUPNAME}.stop
+		for GROUPNAME in $1; do
+			Group.create $GROUPNAME && $GROUPNAME.isExist && $GROUPNAME.stop
 		done
 		Watchdog.check
 	}
 	Group.getData() {
-		if [ "${1}" ]; then
-			GROUPNAME=${1}
+		if [ $1 ]; then
+			GROUPNAME=$1
 		fi
-		if Group.isGroup ${GROUPNAME} && Group.isExist ${GROUPNAME} ; then
+		if Group.isGroup $GROUPNAME && Group.isExist $GROUPNAME ; then
 			GROUPID="$(Group.default.id ${GROUPNAME})"
 			GROUPPATH=${DEFAULTGROUPPATH}/${GROUPNAME}
 			PUBLIC=${GROUPPATH}/public
@@ -1698,8 +1698,8 @@ Watchdog.command() {
 }
 Network.message.send() {
 	ADMINMAIL=$(Config.setting.getValue "adminmail")
-	if [ "${ADMINMAIL}" ]; then
-		for EMAIL in ${ADMINMAIL}; do
+	if [ "$ADMINMAIL" ]; then
+		for EMAIL in $ADMINMAIL; do
 			printf "To: ${EMAIL}\n" > /tmp/msg.html
 			printf "Subject: ACMBSD on $(uname -n): ${2}\n" >> /tmp/msg.html
 			printf "Content-Type: text/${3}; charset=\"us-ascii\"\n\n" >> /tmp/msg.html
@@ -1715,15 +1715,15 @@ Network.message.send() {
 }
 Network.message.send2() {
 	ADMINMAIL=$(Config.setting.getValue "adminmail")
-	if [ "${ADMINMAIL}" ]; then
+	if [ $ADMINMAIL ]; then
 		SUBJECT="ACMBSD on $(uname -n): ${2}"
 		echo ${3} > /tmp/msgbody
-		for MAILTO in ${ADMINMAIL}; do
-			metasend -b -s "${SUBJECT}" -f "/tmp/msgbody" -m text/plain -e none -n -f ${1} -m text/plain -e base64 -t ${MAILTO}
+		for MAILTO in $ADMINMAIL; do
+			metasend -b -s "$SUBJECT" -f /tmp/msgbody -m text/plain -e none -n -f $1 -m text/plain -e base64 -t $MAILTO
 		done
 	fi
 }
-Script.update.check () {
+Script.update.check() {
 	cd ${ACMBSDPATH}
 	rm -rdf tmp
 	mkdir -p tmp
@@ -3267,14 +3267,14 @@ case ${COMMAND} in
 	;;
 	#COMMAND:INFREQ
 	install)
-		System.message "Command '${COMMAND}' running" no "[${COMMAND}]"
-		System.fs.dir.create ${ACMBSDPATH}
-		System.fs.dir.create ${DEFAULTGROUPPATH}
 		System.changeRights ${DEFAULTGROUPPATH} acmbsd acmbsd 0775
+		System.message "Command '$COMMAND' running" no "[$COMMAND]"
+		System.fs.dir.create $ACMBSDPATH
+		System.fs.dir.create $DEFAULTGROUPPATH
 		paramcheck /etc/rc.conf postgresql_enable=\"YES\"
 		System.message "Check for '/usr/local/pgsql/data" waitstatus
-		if [ -d /usr/local/pgsql/data ] ; then
-			System.print.status green "FOUND"
+		if [ -d /usr/local/pgsql/data ]; then
+			System.print.status green FOUND
 		else
 			System.print.status yellow "NOT FOUND"
 			if /usr/local/etc/rc.d/postgresql initdb ; then
@@ -3289,8 +3289,8 @@ case ${COMMAND} in
 			System.message "Running 'acmbsd update all'..."
 			${0} update all
 		fi
-		scriptlink "/usr/local/bin/acmbsd" "${ACMBSDPATH}/scripts/acmbsd.sh"
-		scriptlink "/usr/local/etc/rc.d/rcacm.sh" "${ACMBSDPATH}/scripts/rcacm.sh"
+		scriptlink /usr/local/bin/acmbsd $ACMBSDPATH/scripts/acmbsd.sh
+		scriptlink /usr/local/etc/rc.d/rcacm.sh $ACMBSDPATH/scripts/rcacm.sh
 		Watchdog.restart
 		echo
 	;;
