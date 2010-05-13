@@ -2286,7 +2286,7 @@ Report.system() {
 	printf "</p>\n"
 	printf "<p><b>GLOBAL SETTINGS:</b><br/>\n"
 	printf "<table cellspacing=\"1\" cellpadding=\"3\" border=\"1\">\n"
-	printf "<tr><th>Groups folder path</th><th>Administrators e-mail</th><th>Maintenance time</th><th>Backup folder path</th><th>Backups limit</th></tr>\n"
+	printf "<tr><th>Groups folder path</th><th>Administrator's e-mail</th><th>Maintenance time</th><th>Backup folder path</th><th>Backups limit</th></tr>\n"
 	printf "<tr><td>${DEFAULTGROUPPATH}</td><td>$(Config.setting.getValue adminmail)</td><td>$(Config.setting.getValue autotime)</td><td>$(Config.setting.getValue backuppath)</td><td>$(Config.setting.getValue backuplimit)</td></tr>\n"
 	printf "</table></p>\n"
 }
