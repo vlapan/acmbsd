@@ -1554,7 +1554,8 @@ Instance.static() {
 	}
 ########################################!!!!!!!!!!!!!!!!!!!!
 	Instance.reset() {
-		RESET=$(getSettingValue reset)
+		RESET=`getSettingValue reset`
+		[ $RESET ] || return 1
 		if echo all settings data cache temp | fgrep -qw $RESET; then
 			if [ "$RESET" = all ]; then
 				Instance.diskcache.clear "settings data cache temp"
@@ -1563,6 +1564,7 @@ Instance.static() {
 			fi
 			rm -rdf $PRIVATE/boot.properties
 		fi
+		return 0
 	}
 	return 0
 }
