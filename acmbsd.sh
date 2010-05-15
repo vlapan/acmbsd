@@ -51,7 +51,7 @@ System.print.status() {
 }
 System.message() {
 	if [ "$(echo $OPTIONS | fgrep -w verbose)" -o -z "$SIMPLEOUTPUT" ]; then
-		if [ waitstatus = $2 ]; then
+		if [ waitstatus = "$2" ]; then
 			echo -n $1
 		else
 			echo $1
@@ -2355,26 +2355,22 @@ Report.getFullReport() {
 	printf "</html>\n"
 }
 System.checkPermisson() {
-	if System.isRoot || System.isSystemGroup; then
-		return 0
-	fi
-	if echo ${GROUPSNAME} | grep -w $(echo "${USER}" | tr -d "[0-9]") > /dev/null 2>&1 ; then
-		return 0
-	fi
-	return 1
+	#TODO: use '|| System.isSystemGroup'
+	System.isRoot && return 0
+	echo $GROUPSNAME | fgrep -qw `echo $USER | tr -d '[0-9]'` && return 0 || return 1
 }
 System.fileWriteAccess() {
-	test -w ${1} && return 0 || return 1
+	[ -w $1 ] && return 0 || return 1
 }
 System.isRoot() {
-	test "$(whoami)" = root && return 0 || return 1
+	[ `whoami` = root ] && return 0 || return 1
 }
 System.isSystemGroup() {
-	echo $(groups) | fgrep -w acmbsd && return 0 || return 1
+	echo `groups` | fgrep -qw acmbsd && return 0 || return 1
 }
 System.runAsUser() {
-	echo "Enter the password of '${1}' user if prompted..."
-	su - ${1} -c "${2}"
+	echo "Enter the password of '$1' user if prompted..."
+	su - $1 -c "$2"
 }
 System.vars.groups() {
 	echo "devel test live"
@@ -2586,7 +2582,7 @@ parseOpts $VARS
 if [ $COMMAND != updatebsd -a $COMMAND != preparebsd ]; then
 	umask 007
 fi
-System.checkPermisson || (System.runAsUser root "${RUNSTR}" && exit 1)
+System.checkPermisson || { System.runAsUser root "$RUNSTR"; exit 1; }
 
 #-varSet
 ARCH=`uname -p`
