@@ -4083,23 +4083,23 @@ case ${COMMAND} in
 	#COMMAND:DEVEL
 	tools)
 		Syntax.tools() {
-			echo "Example: ${0} tools {groupname} classname [args]"
+			echo "Example: $0 tools {groupname} classname [args]"
+			[ $1 ] && exit 1
 		}
 		Java.classpath() {
 			local FIRST=true
-			for ITEM in $(ls ${1} | fgrep -w jar); do
-				test ${FIRST} = true && FIRST=false || echo -n :
-				echo -n ${1}/${ITEM}
+			for ITEM in $(ls $1 | fgrep -w jar); do
+				test $FIRST = true && FIRST=false || echo -n :
+				echo -n $1/$ITEM
 			done
 			echo
 		}
 		setParametrsToVars GROUPNAME CLASS P_ARGS
-		if Group.create ${GROUPNAME} && ${GROUPNAME}.isExist; then
-			echo "java -server -classpath $(${GROUPNAME}.getField PUBLIC)/axiom:$(${GROUPNAME}.getField PUBLIC)/tools ${CLASS} ${P_ARGS}"
-			java -server -classpath $(Java.classpath $(${GROUPNAME}.getField PUBLIC)/axiom):$(${GROUPNAME}.getField PUBLIC)/tools ${CLASS} ${P_ARGS}
-		else
-			Syntax.tools && exit 1
-		fi
+		[ "$GROUPNAME" -a "$CLASS" ] && Group.create $GROUPNAME && $GROUPNAME.isExist || Syntax.tools exit
+		PUBLIC=`$GROUPNAME.getField PUBLIC`
+		CLASSPATH=`Java.classpath $PUBLIC/axiom`
+		echo "java -server -classpath $CLASSPATH:$PUBLIC/tools $CLASS $P_ARGS"
+		java -server -classpath $CLASSPATH:$PUBLIC/tools $CLASS $P_ARGS
 	;;
 	#COMMAND:NOTREADY
 	cluster)
