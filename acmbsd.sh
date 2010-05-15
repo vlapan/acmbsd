@@ -553,7 +553,7 @@ Group.create() {
 				echo 'EXTIP='\$($THIS.getExtIP)
 				echo 'GROUPTYPE='\$($THIS.getGroupType)
 				echo 'BRANCH='\$($THIS.getBranch)
-				echo 'ISACTIVE='\$($THIS.isActive)
+				echo 'ISACTIVE='\$($THIS.isActive && echo true || echo false)
 				for INSTANCE in \$($THIS.getInstanceList); do
 					\$INSTANCE.debug
 				done
@@ -1172,7 +1172,7 @@ Instance.create() {
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.ip.wildcard.host=${STATIC_INTIP}"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.ip.shift.port=14000"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.private=${STATIC_HOME}"
-			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.shared=${BACKUPPATH}"
+			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.shared=${SHAREDPATH}"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.protected=\$(${GROUPNAME}.getField PROTECTED)"
 			PROGEXEC="\${PROGEXEC} -Dru.myx.ae3.properties.path.logs=${GROUPLOGS}"
 			ADMINMAIL=\$(Config.setting.getValue adminmail)
@@ -1693,7 +1693,7 @@ Script.update.check() {
 	rm -rdf tmp
 	mkdir -p tmp
 	System.message "Fetching ACMBSD version from CVS..." waitstatus
-	if Network.cvs.fetch /var/ae3 tmp ae3/distribution/acm.cm5/bsd/acmbsd/version > /dev/null 2>&1 ; then
+	if Network.cvs.fetch /var/ae3 tmp ae3/acm-install-freebsd/scripts/version > /dev/null 2>&1 ; then
 		System.print.status green DONE
 		CVSVERSION=`cat tmp/version`
 		rm -rdf tmp
@@ -1710,7 +1710,7 @@ Script.update.check() {
 }
 Script.update.fetch () {
 	System.message "Fetching ACMBSD..." waitstatus
-	if Network.cvs.fetch /var/ae3 scripts ae3/distribution/acm.cm5/bsd/acmbsd > /dev/null 2>&1 ; then
+	if Network.cvs.fetch /var/ae3 scripts ae3/acm-install-freebsd/scripts > /dev/null 2>&1 ; then
 		System.print.status green DONE
 		chmod 775 $ACMBSDPATH/scripts/acmbsd.sh
 		System.message "Running 'acmbsd install -noupdate'..." waitstatus
@@ -2617,12 +2617,15 @@ Config.reload
 DEFAULTGROUPPATH=`Config.setting.getValue groupspath`
 if [ -z "$DEFAULTGROUPPATH" ]; then
 	Config.setting.setValue groupspath /usr/local/acmgroups
+	DEFAULTGROUPPATH=/usr/local/acmgroups
 fi
-BACKUPPATH=$(Config.setting.getValue "backuppath")
-if [ -z "${BACKUPPATH}" ]; then
-	Config.setting.setValue "backuppath" "/usr/local/acmbackups"
-	BACKUPPATH="/usr/local/acmbackups"
+
+SHAREDPATH=`Config.setting.getValue sharedpath`
+if [ -z "$SHAREDPATH" ]; then
+	Config.setting.setValue sharedpath /usr/local/acmshared
+	SHAREDPATH=/usr/local/acmshared
 fi
+BACKUPPATH=$SHAREDPATH/backup
 
 BACKUPLIMIT=`Config.setting.getValue backuplimit`
 if [ -z "$BACKUPLIMIT" ]; then
@@ -3004,7 +3007,7 @@ case $COMMAND in
 				Report.groups | elinks -dump-width 200 -dump
 			;;
 			*)
-				System.print.info "paths: acmbsd - $ACMBSDPATH, groups - $DEFAULTGROUPPATH, shared - $BACKUPPATH"
+				System.print.info "paths: acmbsd - $ACMBSDPATH, groups - $DEFAULTGROUPPATH, shared - $SHAREDPATH"
 				System.print.syntax "status (system | ipnat | domains | daemons | connections | diskusage | groups | fullreport)"
 				exit 1
 			;;
@@ -3161,16 +3164,16 @@ case $COMMAND in
 		fi
 		case $MODS in
 			system)
-				BACKUPPATH=$(Config.setting.getValue "backuppath")
 				ADMINMAIL=`Config.setting.getValue adminmail`
 				AUTOTIME=`Config.setting.getValue autotime`
+				SHAREDPATH=`Config.setting.getValue sharedpath`
 				BACKUPLIMIT=`Config.setting.getValue backuplimit`
 				if [ -z "$SETTINGS" ]; then
 					printf "Settings info and thier values:\n"
-					printf "\t-backuppath=${BACKUPPATH} - where auto backups stores\n"
 					printf "\t-path=$DEFAULTGROUPPATH - default store path for new groups\n"
 					printf "\t-email=$ADMINMAIL - administrator's email for errors and others\n"
 					printf "\t-autotime=$AUTOTIME - time when service daemon starts, value can be 'off'\n"
+					printf "\t-shared=$SHAREDPATH - shared dir for backup store and etc\n"
 					printf "\t-backuplimit=$BACKUPLIMIT - how many auto backups need to store (1-16), default is '7'\n"
 					echo
 					printf "Example: acmbsd config system -email=someone@domain.org,anotherone@domain.org -autotime=04:00 -path=/usr/local/acmgroups\n"
@@ -3200,10 +3203,10 @@ case $COMMAND in
 							Config.setting.setValue autotime $VALUE
 							System.print.info "Value of '$KEY' setting has changed from '$PASTVALUE' to '$VALUE'"
 						;;
-						-backuppath)
-							PASTVALUE=${BACKUPPATH}
-							Config.setting.setValue "backuppath" "${VALUE}"
-							System.print.info "Value of 'backuppath' setting has changed from '${PASTVALUE}' to '${VALUE}'"
+						-shared)
+							PASTVALUE=$SHAREDPATH
+							Config.setting.setValue sharedpath $VALUE
+							System.print.info "Value of '$KEY' setting has changed from '$PASTVALUE' to '$VALUE'"
 						;;
 						-backuplimit)
 							if [ -z "`echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 | fgrep -w $VALUE`" ]; then
@@ -3233,6 +3236,20 @@ case $COMMAND in
 		System.message "Command '$COMMAND' running" no "[$COMMAND]"
 		System.fs.dir.create $ACMBSDPATH
 		System.fs.dir.create $DEFAULTGROUPPATH
+
+		MIG1_SHAREDPATH=`Config.setting.getValue sharedpath`
+		if [ -z "$MIG1_SHAREDPATH" -o ! -d $MIG1_SHAREDPATH ]; then
+			MIG1_BACKUPPATH=`Config.setting.getValue backuppath`
+			if [ "$MIG1_BACKUPPATH" ]; then
+				Config.setting.setValue sharedpath $MIG1_BACKUPPATH
+				SHAREDPATH=$MIG1_BACKUPPATH
+				System.fs.dir.create $SHAREDPATH
+				Config.setting.remove backuppath
+			fi
+		else
+			System.fs.dir.create $SHAREDPATH
+		fi
+
 		System.changeRights $DEFAULTGROUPPATH acmbsd acmbsd 0775 -recursive=false
 		paramcheck /etc/rc.conf postgresql_enable=\"YES\"
 		System.message "Check for '/usr/local/pgsql/data" waitstatus
