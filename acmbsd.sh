@@ -57,7 +57,7 @@ System.message() {
 			echo $1
 		fi
 	else
-		if [ $3 ]; then
+		if [ "$3" ]; then
 			echo -n $3
 		fi
 	fi
@@ -118,7 +118,7 @@ Ports.update() {
 	System.print.status green DONE
 	echo -n Check for new ports versions...
 	NEW=`Ports.toUpdateList`
-	if [ $NEW ]; then
+	if [ "$NEW" ]; then
 		System.print.status green FOUND
 		printf "\n$NEW\n\n" >> $PORTSUPDLOGFILE
 		echo -n Updating ports...
@@ -261,13 +261,13 @@ paramcheck() {
 		touch $1
 	fi
 	System.message "Check for '$2' in '$1'..." waitstatus
-	if cat $1 | fgrep -q "$2"; then
+	if cat $1 | fgrep -q $2; then
 		System.print.status green FOUND
 	else
-		if [ $3 ]; then
-			echo "$3" >> $1
+		if [ "$3" ]; then
+			echo $3 >> $1
 		else
-			echo "$2" >> $1
+			echo $2 >> $1
 		fi
 		System.print.status green ADDED
 	fi
@@ -343,7 +343,7 @@ pkgcheck() {
 System.changeRights(){
 	OPTS="$@"
 	local RSTR=`Function.getSettingValue recursive "$OPTS"`
-	local REQURSIVE=`([ $RSTR ] && [ $RSTR = 'false' -o $RSTR = 'no' -o $RSTR = 0 ]) || echo '-R'`
+	local REQURSIVE=`([ $RSTR ] && [ $RSTR = false -o $RSTR = no -o $RSTR = 0 ]) || echo '-R'`
 	if [ ! -d "$1" -o -z "$2" ]; then
 		return 1
 	fi
@@ -926,7 +926,7 @@ Group.create() {
 			System.changeRights ${STATIC_PROTECTED} ${THIS} ${THIS}1 || return 1
 			System.changeRights ${STATIC_LOGS} ${THIS} ${THIS}1 || return 1
 			System.changeRights ${STATIC_PUBLIC} ${THIS} ${THIS}1 || return 1
-			System.changeRights ${STATIC_HOME} ${THIS} ${THIS}1 || return 1
+			System.changeRights ${STATIC_HOME} ${THIS} ${THIS}1 0775 -recursive=false || return 1
 		}
 		${THIS}.add() {
 			local OPTS="\$(echo \$@ | tr ' ' '\n')"
@@ -1761,24 +1761,24 @@ parseOpts() {
 		fi
 		if echo $ITEM | fgrep -q -; then
 			if echo $ITEM | fgrep -q =; then
-				if [ $SETTINGS ]; then
-					SETTINGS="$SETTINGS"$(printf "\n$ITEM")
+				if [ "$SETTINGS" ]; then
+					SETTINGS="$SETTINGS"`printf "\n$ITEM"`
 				else
-					SETTINGS="$ITEM"
+					SETTINGS=$ITEM
 				fi
 			else
 				if [ "$OPTIONS" ]; then
 					OPTIONS="$OPTIONS $ITEM"
 				else
-					OPTIONS="$ITEM"
+					OPTIONS=$ITEM
 				fi
 			fi
 			continue
 		fi
-		if [ $MODS ]; then
+		if [ "$MODS" ]; then
 			MODS="$MODS $ITEM"
 		else
-			MODS="$ITEM"
+			MODS=$ITEM
 		fi
 	done
 }
@@ -1810,7 +1810,7 @@ Java.pkg.update() {
 	if [ -z "$1" ]; then
 		echo -n "Check for 'diablo-jdk' installed package..."
 		PKGNAME=$(pkg_info | grep diablo-jdk | cut -d' ' -f1)
-		if [ $PKGNAME ]; then
+		if [ "$PKGNAME" ]; then
 			System.print.status green FOUND
 			echo -n "Delete installed java package..."
 			pkg_delete $PKGNAME > /dev/null 2>&1
@@ -3150,7 +3150,7 @@ case $COMMAND in
 	;;
 	#COMMAND:INFREQ
 	config)
-		if echo $GROUPS | fgrep -q $MODS; then
+		if [ "$MODS" ] && echo $GROUPS | fgrep -q $MODS; then
 			Group.create $MODS
 			if [ -z "$SETTINGS" ]; then
 				#TODO: MODS?
@@ -3160,7 +3160,7 @@ case $COMMAND in
 			fi
 			$MODS.config && exit 0
 		fi
-		case $MODS in
+		case "$MODS" in
 			system)
 				ADMINMAIL=`Config.setting.getValue adminmail`
 				AUTOTIME=`Config.setting.getValue autotime`
@@ -3220,7 +3220,7 @@ case $COMMAND in
 			;;
 			*)
 				System.print.syntax "config ( system | {groupname} ) {settings}"
-				if [ $GROUPS ]; then
+				if [ "$GROUPS" ]; then
 					printf "Groups list: \33[1m`echo $GROUPS`\33[0m\n"
 				else
 					System.print.error "no groups exist!"
@@ -3234,6 +3234,7 @@ case $COMMAND in
 		System.message "Command '$COMMAND' running" no "[$COMMAND]"
 		System.fs.dir.create $ACMBSDPATH
 		System.fs.dir.create $DEFAULTGROUPPATH
+		System.changeRights $DEFAULTGROUPPATH acmbsd acmbsd 0775 -recursive=false
 
 		MIG1_SHAREDPATH=`Config.setting.getValue sharedpath`
 		if [ -z "$MIG1_SHAREDPATH" -o ! -d $MIG1_SHAREDPATH ]; then
@@ -3248,21 +3249,20 @@ case $COMMAND in
 			System.fs.dir.create $SHAREDPATH
 		fi
 
-		System.changeRights $DEFAULTGROUPPATH acmbsd acmbsd 0775 -recursive=false
 		paramcheck /etc/rc.conf postgresql_enable=\"YES\"
 		System.message "Check for '/usr/local/pgsql/data" waitstatus
 		if [ -d /usr/local/pgsql/data ]; then
 			System.print.status green FOUND
 		else
 			System.print.status yellow "NOT FOUND"
-			if /usr/local/etc/rc.d/postgresql initdb ; then
+			if /usr/local/etc/rc.d/postgresql initdb; then
 				/usr/local/etc/rc.d/postgresql start
 			else
 				System.print.error "can not initdb!"
 				exit 1
 			fi
 		fi
-		if ! echo $OPTIONS | grep noupdate > /dev/null 2>&1 ; then
+		if ! echo $OPTIONS | fgrep -q noupdate; then
 			echo
 			System.message "Running 'acmbsd update all'..."
 			$0 update all
@@ -3552,8 +3552,8 @@ case $COMMAND in
 				fi
 			fi
 		done
-		[ $BACKUPGROUPS ] || BACKUPGROUPS=$GROUPS
-		DATE=`date +%s`
+		[ "$BACKUPGROUPS" ] || BACKUPGROUPS=$GROUPS
+		DATE=`date +%Y%m%d-%H%M`
 		BACKUPNAME=$DOMAIN.$DATE
 		if echo $SETTINGS | fgrep -q path; then
 			BACKUPDIRPATH=`getSettingValue path`
