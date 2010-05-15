@@ -3186,11 +3186,13 @@ case $COMMAND in
 					case $KEY in
 						-path)
 							PASTVALUE=$DEFAULTGROUPPATH
+							[ $PASTVALUE = $VALUE ] && System.print.info "Same here" && exit 1
 							Config.setting.setValue $MODS-groupspath $VALUE
 							System.print.info "Value of '$KEY' setting has changed from '$PASTVALUE' to '$VALUE'"
 						;;
 						-email)
 							PASTVALUE=$ADMINMAIL
+							[ $PASTVALUE = $VALUE ] && System.print.info "Same here" && exit 1
 							Config.setting.setValue adminmail $VALUE
 							Network.message.send "PASTVALUE:'$PASTVALUE'\r\nVALUE:'$VALUE'" "administrator's email changed" plain -email=$PASTVALUE,$VALUE
 							System.print.info "Value of '$KEY' setting has changed from '$PASTVALUE' to '$VALUE'"
@@ -3198,20 +3200,20 @@ case $COMMAND in
 						;;
 						-autotime)
 							PASTVALUE=$AUTOTIME
+							[ $PASTVALUE = $VALUE ] && System.print.info "Same here" && exit 1
 							Config.setting.setValue autotime $VALUE
 							System.print.info "Value of '$KEY' setting has changed from '$PASTVALUE' to '$VALUE'"
 						;;
 						-shared)
 							PASTVALUE=$SHAREDPATH
+							[ $PASTVALUE = $VALUE ] && System.print.info "Same here" && exit 1
 							Config.setting.setValue sharedpath $VALUE
 							System.print.info "Value of '$KEY' setting has changed from '$PASTVALUE' to '$VALUE'"
 						;;
 						-backuplimit)
-							if [ -z "`echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 | fgrep -w $VALUE`" ]; then
-								System.print.error "setting '$KEY' has bad value!"
-								continue
-							fi
+							echo $VALUE | fgrep -wqoE "[0-9]{1,2}" && System.print.error "setting '$KEY' has bad value!" && continue
 							PASTVALUE=$BACKUPLIMIT
+							[ $PASTVALUE = $VALUE ] && System.print.info "Same here" && exit 1
 							Config.setting.setValue backuplimit $VALUE
 							System.print.info "Value of '$KEY' setting has changed from '$PASTVALUE' to '$VALUE'"
 						;;
