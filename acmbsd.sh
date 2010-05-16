@@ -4053,7 +4053,11 @@ case $COMMAND in
 	#COMMAND:DEVEL
 	tools)
 		Syntax.tools() {
-			echo "Example: $0 tools {groupname} classname [args]"
+			[ $2 ] && Group.create $GROUPNAME && $GROUPNAME.isExist && PUBLIC=`$GROUPNAME.getField PUBLIC` && echo 'Tools: '`ls $PUBLIC/tools | sed -l 's/.class//'`
+			echo "Syntax: $0 tools {groupname} classname [args]"
+			echo "Example:"
+			printf "\t List of tools - $0 tools live"
+			printf "\t Execute tool - $0 tools live CreateGuid"
 			[ $1 ] && exit 1
 		}
 		Java.classpath() {
@@ -4064,12 +4068,21 @@ case $COMMAND in
 			done
 			echo
 		}
-		setParametrsToVars GROUPNAME CLASS P_ARGS
+		setParametrsToVars GROUPNAME CLASS P_ARGS +
+		[ "$GROUPNAME" -a -z "$CLASS" ] && Syntax.tools exit info
 		[ "$GROUPNAME" -a "$CLASS" ] && Group.create $GROUPNAME && $GROUPNAME.isExist || Syntax.tools exit
 		PUBLIC=`$GROUPNAME.getField PUBLIC`
 		CLASSPATH=`Java.classpath $PUBLIC/axiom`
-		echo "java -server -classpath $CLASSPATH:$PUBLIC/tools $CLASS $P_ARGS"
-		java -server -classpath $CLASSPATH:$PUBLIC/tools $CLASS $P_ARGS
+		if [ -f "$PUBLIC/tools/$CLASS.class" ]; then
+			/usr/local/bin/java -server -classpath $CLASSPATH:$PUBLIC/tools $CLASS $P_ARGS
+			exit 0
+		fi
+		if [ -f "$PUBLIC/tools/$CLASS.jar" ]; then
+			/usr/local/bin/java -server -classpath $CLASSPATH -jar "$PUBLIC/tools/$CLASS.jar" $P_ARGS
+			exit 0
+		fi
+		echo "Not found: $CLASS (in $PUBLIC/tools/)"
+		exit 1
 	;;
 	#COMMAND:NOTREADY
 	cluster)
