@@ -706,7 +706,7 @@ Group.create() {
 			printf "\t-extip=\$(${THIS}.getExtIP) - IP-address that not used by acm.cm already\n"
 			printf "\t-publicip=\$(${THIS}.getPublicIP) - IP-address for DNS, default is the same with 'extip'\n"
 			printf "\t-memory=\$(${THIS}.getMemory) - memory for each one instance in group\n"
-			printf "\t-branch=\$(${THIS}.getBranch) - branch of acm.cm5, value can be 'release' or 'current'\n"
+			printf "\t-branch=\$(${THIS}.getBranch) - branch of acm.cm5, value can be 'stable', 'release' or 'current'\n"
 			printf "\t-type=\$(${THIS}.getGroupType) - type of group, can be 'standard' or 'extended'\n"
 			printf "\t-instances=\$(${THIS}.getInstanceCount) - instances count in group, can be changed if type 'extended', default '2'\n"
 			printf "\t-loglevel=\$(${THIS}.getLogLevel) - can be 'NORMAL', 'MINIMAL', 'DEBUG' or 'DEVEL'\n"
@@ -1428,7 +1428,7 @@ Group.static() {
 		echo $1 | fgrep -qw live && echo disable || echo enable
 	}
 	Group.default.branch(){
-		echo $1 | fgrep -qw live && echo release || echo current
+		echo $1 | fgrep -qw live && echo stable || echo release
 	}
 	Group.reset() {
 		rm -rdf $PROTECTED/boot.properties
@@ -1444,7 +1444,7 @@ Group.static() {
 		echo $GROUPSNAME | fgrep -qw $1 && return 0 || return 1
 	}
 	Group.isBranch() {
-		echo release current | fgrep -qw $1 && return 0 || return 1
+		echo stable release current | fgrep -qw $1 && return 0 || return 1
 	}
 	Group.isLogLevel() {
 		echo NORMAL DEBUG DEVEL MINIMAL | fgrep -qw $1 && return 0 || return 1
@@ -1742,8 +1742,10 @@ getfiledate() {
 getacmversions() {
 	ACMCURRENTVERSION=$(System.fs.file.get ${ACMCURRENTVERSIONFILE} 0)
 	ACMRELEASEVERSION=$(System.fs.file.get ${ACMRELEASEVERSIONFILE} 0)
+	ACMSTABLEVERSION=$(System.fs.file.get ${ACMSTABLEVERSIONFILE} 0)
 	ACMCURRENTDATE=$(getfiledate ${ACMCURRENTVERSIONFILE})
 	ACMRELEASEDATE=$(getfiledate ${ACMRELEASEVERSIONFILE})
+	ACMSTABLEDATE=$(getfiledate ${ACMSTABLEVERSIONFILE})
 }
 getSettingValue() {
 	FILTEREDSETTINGS=`echo "$SETTINGS" | fgrep -w $1`
@@ -2247,8 +2249,9 @@ Report.system() {
 	printf "JAVA: <b>${JAVAVERSION}</b><br/>\n"
 	printf "PostgreSQL: <b>${POSTGRESQLVERSION}</b><br/>\n"
 	printf "Locally stored ACM.CM5:<br/>\n"
+	printf "&nbsp;&nbsp;&nbsp;&nbsp;stable : <b>${ACMSTABLEVERSION}</b> (${ACMSTABLEDATE})<br/>\n"
 	printf "&nbsp;&nbsp;&nbsp;&nbsp;release: <b>${ACMRELEASEVERSION}</b> (${ACMRELEASEDATE})<br/>\n"
-	printf "&nbsp;&nbsp;&nbsp;&nbsp;latest: <b>${ACMCURRENTVERSION}</b> (${ACMCURRENTDATE})<br/>"
+	printf "&nbsp;&nbsp;&nbsp;&nbsp;current: <b>${ACMCURRENTVERSION}</b> (${ACMCURRENTDATE})<br/>"
 	printf "</p>\n"
 	printf "<p><b>GLOBAL SETTINGS:</b><br/>\n"
 	printf "<table cellspacing=\"1\" cellpadding=\"3\" border=\"1\">\n"
@@ -2572,7 +2575,7 @@ SCRIPTNAME=acmbsd
 GROUPSNAME="devel test live temp"
 RUNSTR="$0 $@"
 COMMAND=$1
-VERSION=129
+VERSION=130
 
 COMMENTEDCOMMANDS=$(cat $0 | fgrep -A1 '#COMMAND:' | fgrep -v fgrep)
 COMMANDS=$(echo "$COMMENTEDCOMMANDS" | fgrep -oE '\b[a-z]*\)?\b')
@@ -2597,6 +2600,7 @@ ACMBSDPATH=/usr/local/$SCRIPTNAME
 ACMCM5PATH=$ACMBSDPATH/acm.cm5
 ACMCURRENTVERSIONFILE=$ACMCM5PATH/current/version/version
 ACMRELEASEVERSIONFILE=$ACMCM5PATH/release/version/version
+ACMSTABLEVERSIONFILE=$ACMCM5PATH/stable/version/version
 DBTEMPLATEFILE=$ACMBSDPATH/db-template/acmbsd.backup
 WATCHDOGFLAG=/var/run/acmbsd-watchdog.pid
 NAMEDCONFFILE=/etc/namedb/named.conf
@@ -2871,11 +2875,22 @@ case $COMMAND in
 					exit 0
 				fi
 				System.message "Command '${COMMAND}' running" no "[${COMMAND}]"
-				if [ "${BRANCH}" = "current" ]; then
-					cvsacmcm "current" ${ACMCURRENTVERSION}
-				else
-					cvsacmcm "release" ${ACMRELEASEVERSION}
-				fi
+				case "${BRANCH}" in
+					current)
+						cvsacmcm "current" ${ACMCURRENTVERSION}
+					;;
+					release)
+						cvsacmcm "release" ${ACMRELEASEVERSION}
+					;;
+					stable)
+						cvsacmcm "stable" ${ACMSTABLEVERSION}
+					;;
+					*)
+						System.print.syntax 'branch is one of: "current", "release" or "stable".'
+						echo
+						exit 1
+					;;
+				esac
 				Group.create ${GROUPNAME} && ${GROUPNAME}.update
 				echo
 				exit ${RETVAL}
@@ -2890,6 +2905,7 @@ case $COMMAND in
 				Script.update
 				cvsacmcm "current" ${ACMCURRENTVERSION}
 				cvsacmcm "release" ${ACMRELEASEVERSION}
+				cvsacmcm "stable" ${ACMSTABLEVERSION}
 				Group.updateAll
 			;;
 			system)
@@ -2901,6 +2917,7 @@ case $COMMAND in
 				Script.update.check
 				cvsacmcm "current" ${ACMCURRENTVERSION} onlycheck
 				cvsacmcm "release" ${ACMRELEASEVERSION} onlycheck
+				cvsacmcm "stable" ${ACMSTABLEVERSION} onlycheck
 			;;
 			*)
 				System.print.syntax "update ( all | system | check | {groupname} ) [-rollback] [-force]"
@@ -2955,7 +2972,7 @@ case $COMMAND in
 			printf "Settings info:\n"
 			printf "\t-extip=192.168.1.1 - IP-address that not used by acm.cm already\n"
 			printf "\t-memory=256m - memory for each one instance in group, default '512m'\n"
-			printf "\t-branch=( release | current ) - branch of acm.cm5, default to live group is 'release' for test and devel groups is 'current'\n"
+			printf "\t-branch=( stable | release | current ) - branch of acm.cm5, default to live group is 'stable' for test and devel groups is 'release'\n"
 			printf "\t-type=( standard | extended ) - type of group, default 'standard'\n"
 			echo
 			printf "Free groups: \33[1m${FREEGROUPS}\33[0m\n"
@@ -3153,7 +3170,6 @@ case $COMMAND in
 		if [ "$MODS" ] && echo $GROUPS | fgrep -q $MODS; then
 			Group.create $MODS
 			if [ -z "$SETTINGS" ]; then
-				#TODO: MODS?
 				$MODS.getSettings
 				System.print.syntax "$COMMAND {groupname} [-branch=release] [-memory=256m] [-extip=10.1.1.1] [-publicip=10.1.1.2] [-type=standard] [-instances={1,9}]\n"
 				exit 1
