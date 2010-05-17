@@ -1695,7 +1695,7 @@ Script.update.check() {
 	rm -rdf tmp
 	mkdir -p tmp
 	System.message "Fetching ACMBSD version from CVS..." waitstatus
-	if Network.cvs.fetch /var/ae3 tmp ae3/acm-install-freebsd/scripts/version > /dev/null 2>&1 ; then
+	if Network.cvs.fetch /var/ae3 tmp acm-install-freebsd/scripts/version > /dev/null 2>&1 ; then
 		System.print.status green DONE
 		CVSVERSION=`cat tmp/version`
 		rm -rdf tmp
@@ -1712,7 +1712,7 @@ Script.update.check() {
 }
 Script.update.fetch () {
 	System.message "Fetching ACMBSD..." waitstatus
-	if Network.cvs.fetch /var/ae3 scripts ae3/acm-install-freebsd/scripts > /dev/null 2>&1 ; then
+	if Network.cvs.fetch /var/ae3 scripts acm-install-freebsd/scripts > /dev/null 2>&1 ; then
 		System.print.status green DONE
 		chmod 775 $ACMBSDPATH/scripts/acmbsd.sh
 		System.message "Running 'acmbsd install -noupdate'..." waitstatus
