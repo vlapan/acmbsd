@@ -73,12 +73,13 @@ THIS.openToPublic() {
 	cat /etc/ipf/ipnat.conf | sed -l "/THIS/d" > /tmp/ipnat.conf && mv /tmp/ipnat.conf /etc/ipf
 	for IP in $($THIS_GROUPNAME.getExtIP | tr ',' ' '); do
 		EXTINTERFACE=$(Network.getInterfaceByIP "${IP}")
-		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 80 -> ${THIS_INTIP} port 14080 round-robin # THIS" >> /etc/ipf/ipnat.conf 
+		[ -z "$EXTINTERFACE" ] && continue
+		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 80 -> ${THIS_INTIP} port 14080 round-robin # THIS" >> /etc/ipf/ipnat.conf
 		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 443 -> ${THIS_INTIP} port 14443 round-robin # THIS" >> /etc/ipf/ipnat.conf
-		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 14022 -> ${THIS_INTIP} port 14022 round-robin # THIS" >> /etc/ipf/ipnat.conf 
-		echo "rdr lo0 ${IP}/255.255.255.255 port 80 -> ${THIS_INTIP} port 14080 round-robin # THIS" >> /etc/ipf/ipnat.conf 
+		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 14022 -> ${THIS_INTIP} port 14022 round-robin # THIS" >> /etc/ipf/ipnat.conf
+		echo "rdr lo0 ${IP}/255.255.255.255 port 80 -> ${THIS_INTIP} port 14080 round-robin # THIS" >> /etc/ipf/ipnat.conf
 		echo "rdr lo0 ${IP}/255.255.255.255 port 443 -> ${THIS_INTIP} port 14443 round-robin # THIS" >> /etc/ipf/ipnat.conf
-		echo "rdr lo0 ${IP}/255.255.255.255 port 14022 -> ${THIS_INTIP} port 14022 round-robin # THIS" >> /etc/ipf/ipnat.conf 
+		echo "rdr lo0 ${IP}/255.255.255.255 port 14022 -> ${THIS_INTIP} port 14022 round-robin # THIS" >> /etc/ipf/ipnat.conf
 	done
 	System.print.status green DONE
 	THIS.reloadIPNAT
@@ -152,6 +153,7 @@ THIS.startDaemon() {
 	PROGEXEC="${PROGEXEC} -Xms`${THIS_GROUPNAME}.getMemory`"
 	PROGEXEC="${PROGEXEC} -jar boot.jar"
 	if [ -e "${THIS_OUT}" ]; then
+		#TODO: keep few versions and .prev
 		cp ${THIS_OUT} ${THIS_OUTPREV}
 	fi
 	echo "${PROGEXEC}" > ${THIS_HOME}/progexec
@@ -180,7 +182,7 @@ THIS.start() {
 		printf .
 		sleep 1
 		COUNT=$((COUNT + 1))
-		if [ "$1" -a "$1" = wait ]; then
+		if ([ "$1" -a "$1" = wait ] || Function.isOptionExist wait "$@" > /dev/null 2>&1 || Console.isOptionExist wait ) && ! Console.isOptionExist skipwarmup; then
 			if [ -f ${THIS_RESTARTFILE} -a -f ${THIS_OUT} ]; then
 				CANFAIL=false
 				NEWSTARTEDSERVERS=`cat ${THIS_OUT} | fgrep starting: | cut -d' ' -f5 | tr '\n' ' '`
@@ -195,7 +197,7 @@ THIS.start() {
 					fi
 				done
 				if [ "`cat $THIS_OUT | fgrep 'init finished'`" ]; then
-					System.print.status green ONLINE
+					System.print.status green DONE
 					break;
 				fi
 				if [ $COUNT -ge 600 ]; then

@@ -87,17 +87,9 @@ THIS.getMemory() {
 }
 THIS.setExtIP() {
 	[ "$1" ] || return 1
-	for IP in `echo "$1" | tr ',' ' '`; do
-		if echo "`Network.getFreeIPList`" | fgrep -qw "$IP" || echo "`THIS.getExtIP`" | fgrep -qw "$IP"; then
-			echo good
-		else
-			System.print.error "'$IP' is not free!"
-			return 1
-		fi
-	done
 	Config.setting.setValue THIS-extip "$1"
 	for INSTANCE in `THIS.getInstanceActive`; do
-		$INSTANCE.openToPublic
+		Instance.create $INSTANCE && $INSTANCE.openToPublic
 	done
 	return 0
 }
@@ -138,7 +130,7 @@ THIS.setBranch() {
 }
 THIS.getBranch() {
 	local BRANCH=`Config.setting.getValue THIS-branch`
-	[ $BRANCH ] && echo $BRANCH || Group.default.branch THIS
+	[ "$BRANCH" ] && echo $BRANCH || Group.default.branch THIS
 }
 THIS.setEA() {
 	if Group.isEA "$1" && [ $1 != "`THIS.getEA`" ]; then
@@ -302,8 +294,9 @@ THIS.start() {
 	THIS.setActive true
 	local TOSTART=''
 	if [ "`THIS.getGroupType`" = extended ]; then
+		System.message "Start type - extended"
 		local FIRST=true
-		local TOSTART=`THIS.getInstanceList`
+		local TOSTART="`THIS.getInstanceList`"
 		System.message "Instances for start: $TOSTART"
 		for INSTANCE in $TOSTART; do
 			Function.isExist $INSTANCE.isObject || Instance.create $INSTANCE
@@ -317,6 +310,7 @@ THIS.start() {
 		return 0
 	fi
 	if [ "`THIS.getGroupType`" = standard ]; then
+		System.message "Start type - standard"
 		if [ "`THIS.getInstanceActive`" ]; then
 			TOSTART=`THIS.getInstanceActive`
 		else
@@ -341,7 +335,7 @@ THIS.stop() {
 	done
 }
 THIS.restart() {
-	THIS.setHierarchy || return 1
+	#THIS.setHierarchy || return 1
 	if [ "`THIS.getGroupType`" = parallel -o "`THIS.getGroupType`" = primitive ]; then
 		System.message "Instances for restart: `THIS.getInstanceList`"
 		for INSTANCE in `THIS.getInstanceList`; do
@@ -351,6 +345,7 @@ THIS.restart() {
 		return 0
 	fi
 	if [ "`THIS.getGroupType`" = extended ]; then
+		System.message "Restart type - extended"
 		local INSTANCE1=`THIS.getInstanceList | cut -d' ' -f1`
 		local INSTANCE2=`THIS.getInstanceList | cut -d' ' -f2`
 		[ -z "$INSTANCE1" -o -z "$INSTANCE2" ] && System.print.error "can't find one of instances, check: instance1=$INSTANCE1, instance2=$INSTANCE2" && return 1
@@ -360,15 +355,28 @@ THIS.restart() {
 		local PUBLIC=`$INSTANCE1.isPublic && echo $INSTANCE1 || echo $INSTANCE2`
 		[ -z "$PUBLIC" ] && System.print.error 'no public instance' && return 1
 		local RESERVED=`[ "$PUBLIC" = "$INSTANCE1" ] && echo $INSTANCE2 || echo $INSTANCE1`
-		System.message "public instance: $PUBLIC"
-		System.message "reserved instance: $RESERVED"
-		System.message "restarting reserved instance..." && $RESERVED.stop && $RESERVED.start && System.message "restarting public instance..." && $PUBLIC.stop && $PUBLIC.start nopublic && return 0 || return 1
+		System.message "Public instance: $PUBLIC"
+		System.message "Reserved instance: $RESERVED"
+		System.message "Restarting reserved instance..." && $RESERVED.stop && $RESERVED.start -wait && System.message "Restarting public instance..." && $PUBLIC.stop && $PUBLIC.start nopublic && return 0 || return 1
 	fi
 	ACTIVEINSTANCES=`THIS.getInstanceActive`
-	echo $ACTIVEINSTANCES
+	System.message 'Restart type - standard'
+	System.message "$ACTIVEINSTANCES"
 	if [ "`echo $ACTIVEINSTANCES | wc -w | tr -d ' '`" != 1 ]; then
-		System.print.error "two instances started but group has 'standard' mode!"
-		return 1
+		#TODO: print.warning
+		System.print.info "two instances started but group has 'standard' mode!"
+		local INSTANCE1=`THIS.getInstanceList | cut -d' ' -f1`
+		local INSTANCE2=`THIS.getInstanceList | cut -d' ' -f2`
+		[ -z "$INSTANCE1" -o -z "$INSTANCE2" ] && System.print.error "can't find one of instances, check: instance1=$INSTANCE1, instance2=$INSTANCE2" && return 1
+		Function.isExist $INSTANCE1.isObject || Instance.create $INSTANCE1 || return 1
+		Function.isExist $INSTANCE2.isObject || Instance.create $INSTANCE2 || return 1
+		if $INSTANCE1.isPublic && $INSTANCE2.isPublic; then
+			System.print.info 'two instance are public!' && $INSTANCE1.stop
+		else
+			$INSTANCE1.isPublic && $INSTANCE2.stop
+			$INSTANCE2.isPublic && $INSTANCE1.stop
+		fi
+		ACTIVEINSTANCES=`THIS.getInstanceActive`
 	fi
 	if Function.isOptionExist fast "$@" || Console.isOptionExist fast ; then
 		for INSTANCE in $ACTIVEINSTANCES; do
@@ -378,11 +386,13 @@ THIS.restart() {
 		return 0
 	fi
 	START=`echo $(THIS.getInstanceList) | sed "s/$ACTIVEINSTANCES //" | sed "s/ $ACTIVEINSTANCES//" | sed "s/$ACTIVEINSTANCES//"`
-	Function.isExist $START.isObject || Instance.create $START
 	if [ -z "$START" ]; then
 		System.print.error "Can not restart, something wrong!"
+		System.print.info "Instances: $(THIS.getInstanceList)"
+		System.print.info "Active instances: $ACTIVEINSTANCES"
 		return 1
 	fi
+	Function.isExist $START.isObject || Instance.create $START
 	WAIT=wait
 	if Function.isOptionExist skipwarmup "$@" > /dev/null 2>&1 || Console.isOptionExist skipwarmup ; then
 		WAIT=''
@@ -518,7 +528,7 @@ THIS.cluster.connect() {
 }
 THIS.createInstances() {
 	THIS.isExist || return 1
-	for ITEM in `THIS.getInstanceList`; do
-		Instance.create $ITEM
+	for INSTANCE in `THIS.getInstanceList`; do
+		Instance.create $INSTANCE
 	done
 }
