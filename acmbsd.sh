@@ -494,6 +494,7 @@ System.changeRights() {
 }
 cvsacmcm() {
 	ONLYCHECK=$3
+	RETVAL=0
 	System.fs.dir.create $ACMCM5PATH > /dev/null 2>&1
 	cd $ACMCM5PATH
 	System.message "Fetching ACM.CM5 (sys-$1) version..." waitstatus
@@ -504,25 +505,26 @@ cvsacmcm() {
 		RETVAL=1
 	fi
 	if [ -f tmp/version ]; then
-		CVSVERSION=`cat tmp/version`
-		if [ "${CVSVERSION}" ]; then
-			if [ "$(echo ${OPTIONS} | fgrep -w force)" -o -z "${ONLYCHECK}" -a ${2} != ${CVSVERSION} ]; then
-				System.message "ACM.CM5 (sys-${1}) version: Latest - '${CVSVERSION}', Local - '${2}'"
-				System.message "Fetching latest ACM.CM5 (sys-${1})..."
-				if Network.cvs.fetch /var/share ${1} export/sys-${1} ; then
-					System.message "Finish..." waitstatus
-					System.print.status green "OK"
+		CVSVERSION=`cat tmp/version 2> /dev/null`
+		if [ "$CVSVERSION" ]; then
+			if [ "`echo $OPTIONS | fgrep -w force`" -o -z "$ONLYCHECK" -a "$2" != $CVSVERSION ]; then
+				System.message "ACM.CM5 (sys-$1) version: Latest - '$CVSVERSION', Local - '$2'"
+				System.message "Fetching latest ACM.CM5 (sys-$1)..."
+				if Network.cvs.fetch /var/share $1 export/sys-$1 ; then
+					System.message 'Finish...' waitstatus
+					System.print.status green OK
 				else
-					System.message "Finish..." waitstatus
-					System.print.status red "ERROR"
+					System.message 'Finish...' waitstatus
+					System.print.status red ERROR
 					RETVAL=1
 				fi
 			else
-				System.message "ACM.CM5 (sys-${1}) version already updated to ${CVSVERSION}"
+				System.message "ACM.CM5 (sys-$1) version already updated to $CVSVERSION"
 			fi
 		fi
 	fi
 	rm -rdf tmp
+	return $RETVAL
 }
 Config.reload() {
 	if [ -f $DATAFILE ]; then
@@ -1060,14 +1062,6 @@ getfiledate() {
 	fi
 	ls -lrtT ${1} | tr -s " " | cut -d" " -f6-8
 }
-getacmversions() {
-	ACMCURRENTVERSION=$(System.fs.file.get ${ACMCURRENTVERSIONFILE} 0)
-	ACMRELEASEVERSION=$(System.fs.file.get ${ACMRELEASEVERSIONFILE} 0)
-	ACMSTABLEVERSION=$(System.fs.file.get ${ACMSTABLEVERSIONFILE} 0)
-	ACMCURRENTDATE=$(getfiledate ${ACMCURRENTVERSIONFILE})
-	ACMRELEASEDATE=$(getfiledate ${ACMRELEASEVERSIONFILE})
-	ACMSTABLEDATE=$(getfiledate ${ACMSTABLEVERSIONFILE})
-}
 getSettingValue() {
 	FILTEREDSETTINGS=`echo "$SETTINGS" | fgrep -w $1`
 	RETVAL=1
@@ -1436,8 +1430,9 @@ domainadd() {
 			;;
 		esac
 		PASSWORD=$(dd if=/dev/random count=1 bs=8 | md5)
-		psql -tA -c "CREATE OR REPLACE USER '${ID}' WITH PASSWORD '${PASSWORD}'" postgres pgsql
-		psql -tA -c "GRANT ALL ON '${ID}' TO '${ID}'" postgres pgsql
+		psql -tA -c "CREATE USER \"${ID}\" WITH PASSWORD '${PASSWORD}'" postgres pgsql
+		psql -tA -c "ALTER USER \"${ID}\" WITH PASSWORD '${PASSWORD}'" postgres pgsql
+		psql -tA -c "GRANT ALL ON DATABASE \"${ID}\" TO \"${ID}\"" postgres pgsql
 		printf " user='${ID}'" >> ${SERVERSCONF}
 		printf " password='${PASSWORD}'" >> ${SERVERSCONF}
 		printf "${STOP}" >> ${SERVERSCONF}
@@ -1565,9 +1560,11 @@ Report.system() {
 	printf "JAVA: <b>${JAVAVERSION}</b><br/>\n"
 	printf "PostgreSQL: <b>${POSTGRESQLVERSION}</b><br/>\n"
 	printf "Locally stored ACM.CM5:<br/>\n"
-	printf "&nbsp;&nbsp;&nbsp;&nbsp;stable : <b>${ACMSTABLEVERSION}</b> (${ACMSTABLEDATE})<br/>\n"
-	printf "&nbsp;&nbsp;&nbsp;&nbsp;release: <b>${ACMRELEASEVERSION}</b> (${ACMRELEASEDATE})<br/>\n"
-	printf "&nbsp;&nbsp;&nbsp;&nbsp;current: <b>${ACMCURRENTVERSION}</b> (${ACMCURRENTDATE})<br/>"
+	for ITEM in `ls $ACMCM5PATH/$BRANCH`; do
+		VERSIONFILE=$ACMCM5PATH/$ITEM/version/version
+		VERSIONDATE=`getfiledate ${VERSIONFILE}`
+		printf "&nbsp;&nbsp;&nbsp;&nbsp;$ITEM : <b>`cat ${VERSIONFILE}`</b> (${VERSIONDATE})<br/>\n"
+	done
 	printf "</p>\n"
 	printf "<p><b>GLOBAL SETTINGS:</b><br/>\n"
 	printf "<table cellspacing=\"1\" cellpadding=\"3\" border=\"1\">\n"
@@ -1966,9 +1963,6 @@ CVSREPO=cvs.myx.ru
 
 ACMBSDPATH=/usr/local/$SCRIPTNAME
 ACMCM5PATH=$ACMBSDPATH/acm.cm5
-ACMCURRENTVERSIONFILE=$ACMCM5PATH/current/version/version
-ACMRELEASEVERSIONFILE=$ACMCM5PATH/release/version/version
-ACMSTABLEVERSIONFILE=$ACMCM5PATH/stable/version/version
 DBTEMPLATEFILE=$ACMBSDPATH/db-template/acmbsd.backup
 WATCHDOGFLAG=/var/run/acmbsd-watchdog.pid
 NAMEDCONFFILE=/etc/namedb/named.conf
@@ -2016,8 +2010,6 @@ System.getGroups() {
 System.getGroups
 
 ACTIVATEDGROUPS=`Group.groups.getActive`
-
-getacmversions
 
 case $COMMAND in
 	#COMMAND:EVERYDAY
@@ -2179,22 +2171,9 @@ case $COMMAND in
 				exit 0
 			fi
 			System.message "Command '$COMMAND' running" no "[$COMMAND]"
-			case "`$GROUPNAME.getBranch`" in
-				current)
-					cvsacmcm current $ACMCURRENTVERSION
-				;;
-				release)
-					cvsacmcm release $ACMRELEASEVERSION
-				;;
-				stable)
-					cvsacmcm stable $ACMSTABLEVERSION
-				;;
-				*)
-					System.print.syntax "branch must be: 'current', 'release' or 'stable'."
-					echo
-					exit 1
-				;;
-			esac
+			BRANCH=`$GROUPNAME.getBranch`
+			VERSIONFILE=$ACMCM5PATH/$BRANCH/version/version
+			cvsacmcm $BRANCH `cat $VERSIONFILE 2> /dev/null || echo 0` || exit 1
 			Group.create $GROUPNAME && $GROUPNAME.update
 			echo
 			exit $RETVAL
@@ -2203,9 +2182,10 @@ case $COMMAND in
 			all)
 				System.message "Command '$COMMAND' running" no "[$COMMAND]"
 				Script.update
-				cvsacmcm current $ACMCURRENTVERSION
-				cvsacmcm release $ACMRELEASEVERSION
-				cvsacmcm stable $ACMSTABLEVERSION
+				for ITEM in `ls $ACMCM5PATH/$BRANCH`; do
+					VERSIONFILE=$ACMCM5PATH/$ITEM/version/version
+					cvsacmcm $ITEM `cat $VERSIONFILE 2> /dev/null || echo 0`
+				done
 				Group.updateAll
 			;;
 			system)
@@ -2215,9 +2195,10 @@ case $COMMAND in
 			check)
 				System.message "Command '$COMMAND' running" no "[$COMMAND]"
 				Script.update.check
-				cvsacmcm current $ACMCURRENTVERSION onlycheck
-				cvsacmcm release $ACMRELEASEVERSION onlycheck
-				cvsacmcm stable $ACMSTABLEVERSION onlycheck
+				for ITEM in `ls $ACMCM5PATH/$BRANCH`; do
+					VERSIONFILE=$ACMCM5PATH/$ITEM/version/version
+					cvsacmcm $ITEM `cat $VERSIONFILE 2> /dev/null || echo 0` onlycheck
+				done
 			;;
 			*)
 				System.print.syntax "update ( all | system | check | {groupname} ) [-rollback] [-force]"
@@ -2292,7 +2273,7 @@ case $COMMAND in
 	#COMMAND:EVERYDAY
 	status)
 		case "${MODS}" in
-			fullreport)
+			full)
 				Report.system | elinks -dump-width 200 -dump
 				echo
 				Report.ipnat | elinks -dump-width 200 -dump
@@ -2330,7 +2311,7 @@ case $COMMAND in
 			;;
 			*)
 				System.print.info "paths: acmbsd - $ACMBSDPATH, groups - $DEFAULTGROUPPATH, shared - $SHAREDPATH"
-				System.print.syntax "status (system | ipnat | domains | daemons | connections | diskusage | groups | fullreport)"
+				System.print.syntax "status (system | ipnat | domains | daemons | connections | diskusage | groups | full)"
 				exit 1
 			;;
 		esac

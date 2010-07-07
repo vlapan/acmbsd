@@ -122,10 +122,12 @@ THIS.getGroupType() {
 	[ "$GROUPTYPE" ] && echo $GROUPTYPE || echo standard
 }
 THIS.setBranch() {
-	if Group.isBranch "$1" && [ $1 != "`THIS.getBranch`" ]; then
+	if [ "$1" != "`THIS.getBranch`" ]; then
 		System.print.message.valuechange branch THIS $1 `THIS.getBranch`
 		Config.setting.setValue THIS-branch $1
 		System.print.status green CHANGED
+		[ -d "$ACMCM5PATH/$1" ] || mkdir -p $ACMCM5PATH/$1
+		System.message "update && restart me"
 	fi
 }
 THIS.getBranch() {
@@ -209,18 +211,19 @@ THIS.config() {
 	return 0
 }
 THIS.isReady() {
-	THIS.isExist && Group.isType $GROUPTYPE && Group.isMemory $MEMORY && Group.isBranch $BRANCH && return 0 || return 1
+	THIS.isExist && Group.isType $GROUPTYPE && Group.isMemory $MEMORY && return 0 || return 1
 }
 THIS.isUpdated() {
-	#TODO: move this check to autoupdate
+	#TODO: move this check to autoupdate?
 	local VERSION=`cat $ACMCM5PATH/$(THIS.getBranch)/version/version`
+	[ -z "$VERSION" ] && VERSION=0
 	echo ":1:checking for suitable update"
 	if [ "`THIS.getVersion`" != "$VERSION" ]; then
 		local ACMLASTMAJORVERSION=`echo $VERSION | cut -d. -f3 | cut -d/ -f1`
 		local ACMMAJORVERSION=`echo $(THIS.getVersion) | cut -d. -f3 | cut -d/ -f1`
 		local ACMLASTTYPEVERSION=`echo $VERSION | cut -d/ -f2 | cut -c1-1`
 		local ACMTYPEVERSION=`echo $(THIS.getVersion) | cut -d/ -f2 | cut -c1-1`
-		if [ "$ACMLASTMAJORVERSION" != "$ACMMAJORVERSION" -o "$ACMLASTTYPEVERSION" != "$ACMTYPEVERSION" ]; then
+		if [ "$ACMLASTMAJORVERSION" != "$ACMMAJORVERSION" -o "$ACMLASTTYPEVERSION" != "$ACMTYPEVERSION" ] && [ "$VERSION" != 0 ]; then
 			echo ":2:perhaps serious update($ACMLASTMAJORVERSION-$ACMMAJORVERSION:$ACMLASTTYPEVERSION-$ACMTYPEVERSION)"
 			if echo $ACMLASTTYPEVERSION | fgrep R || echo $ACMLASTTYPEVERSION | fgrep U ; then
 				echo ":3.1:it is new release or update, you must have it"
