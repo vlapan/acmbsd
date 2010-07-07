@@ -8,7 +8,7 @@ Do next sections after you get terminal access
 1.1 Get script
 
 *Method 1. CVS
-cvs -d :pserver:guest:guest@cvs.myx.ru:/var/ae3 -fq -z 6 checkout -d acmbsd ae3/distribution/acm.cm5/bsd/acmbsd
+cvs -d :pserver:guest:guest@cvs.myx.ru:/var/ae3 -fq -z 6 checkout -d acmbsd acm-install-freebsd/scripts
 
 *Method 2. GIT
 Requirements: FreeBSD, Port Tree
