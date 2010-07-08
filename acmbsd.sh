@@ -166,11 +166,11 @@ Ports.update() {
 System.update() {
 	echo -n Reciving updates for your system version...
 	if [ -z "$AUTO" ]; then
-		/usr/sbin/freebsd-update fetch > $OSUPDLOGFILE
+		/usr/sbin/freebsd-update fetch > $OSUPDLOGFILE 2>&1
 	else
-		/usr/sbin/freebsd-update cron > $OSUPDLOGFILE
+		/usr/sbin/freebsd-update cron > $OSUPDLOGFILE 2>&1
 	fi
-	if /usr/sbin/freebsd-update install >> $OSUPDLOGFILE; then
+	if /usr/sbin/freebsd-update install >> $OSUPDLOGFILE 2>&1; then
 		System.print.status green INSTALLED
 		System.print.info "restart your system!"
 		Network.message.send "`cat $OSUPDLOGFILE`" "freebsd updates awaiting os restart" plain
@@ -1163,9 +1163,9 @@ Java.pkg.install() {
 	fi
 	FILENAME=$(echo "$CHECKSUMPAGE" | fgrep jre-freebsd$OSVERSION.$ARCH | cut -d'>' -f2 | cut -d'<' -f1)
 	if [ -z "$CHECKSUMPAGE" -o -z "$FILENAME" ]; then
-		System.print.info "Filename: "$FILENAME
+		System.print.info "Filename: $FILENAME, OSVERSION: $OSVERSION, ARCH: $ARCH"
 		System.print.error "faild to parse filename, maybe there is no java for your arch or it can be network error"
-		exit 1
+		return 1
 	fi
 	echo -n "Check for diablo JRE file..."
 	if [ -f "/usr/ports/distfiles/$FILENAME" ]; then
@@ -2864,7 +2864,7 @@ case $COMMAND in
 			[ $1 ] && exit 1
 		}
 		DOMAIN=`Console.getSettingValue domain`
-		[ $DOMAIN ] || Syntax.backup exit
+		[ "$DOMAIN" ] || Syntax.backup exit
 		STARTTIME=`date +%s`
 		System.print.info "Backup of '$DOMAIN' has started!"
 		for ITEM in $SETTINGS; do
@@ -2893,7 +2893,7 @@ case $COMMAND in
 		System.fs.dir.create $BACKUPTMPPATH
 		if ! echo $OPTIONS | fgrep -q nodb; then
 			echo -n Dumping database...
-			if pg_dump -f $BACKUPTMPPATH/db.backup -O -Z 4 -Fc -U pgsql $DOMAIN > /dev/null 2>&1 ; then
+			if pg_dump -f $BACKUPTMPPATH/db.backup -O -Z 4 -Fc -U pgsql $DOMAIN; then
 				System.print.status green DONE
 			else
 				System.print.status red FAILED

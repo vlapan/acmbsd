@@ -421,7 +421,6 @@ THIS.restart() {
 	else
 		System.print.error 'can not start second instance!'
 		Network.message.send2 "`$START.getField OUT`" 'THIS: error while restarting' 'ACM.CMS out for you'
-		$START.stop
 	fi
 }
 THIS.checkUser() {

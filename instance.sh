@@ -221,7 +221,7 @@ THIS.stop() {
 #		THIS.isActive || return 1
 	System.message "Stoping 'THIS' instance"
 	THIS.closeFromPublic
-	${THIS_GROUPNAME}.isSingleActive && ! System.isShutdown && ${THIS_GROUPNAME}.setActive false
+	${THIS_GROUPNAME}.isSingleActive && ! System.isShutdown && echo 'Last instance, group deactivated' && $THIS_GROUPNAME.setActive false
 	[ "$1" = cooldown ] && System.cooldown
 	killbylockfile ${THIS_DAEMONFLAG}
 	THIS.setUptime
