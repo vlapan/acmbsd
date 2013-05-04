@@ -2,7 +2,7 @@ ACMBSD automation script for ACMCMS on FreeBSD OS
 
 1. Install
 
-First you need to install FreeBSD 
+First you need to install FreeBSD
 Do next sections after you get terminal access
 
 1.1 Get script
@@ -15,7 +15,7 @@ Requirements: FreeBSD, Port Tree
 cd /usr/ports/devel/git && make install clean
 git clone git://github.com/vlapan/acmbsd.git
 
-1.2 Prepare system 
+1.2 Prepare system
 cd acmbsd
 chmod +x acmbsd.sh
 ./acmbsd.sh preparebsd 	# install ports and configure system
@@ -29,9 +29,22 @@ cd acmbsd
 
 1.4 Add new group of instances
 acmbsd add live
+acmbsd update live
 
 1.5 Configure system and group
-To see command syntax and available group list execute this command:
+
+Edit sudoers with 'visudo' command
+
+Add following lines:
+
+Defaults    editor=/usr/local/bin/nano
+Defaults    !env_reset
+
+And uncomment this line:
+
+%wheel  ALL=(ALL) ALL
+
+To see config command syntax and available group list execute this command:
 acmbsd config
 
 Change manager email address:
@@ -48,3 +61,9 @@ acmbsd config live
 
 1.6 Start group of instances
 acmbsd start live
+
+1.7 Adding new host to cluster
+acmbsd cluster activate
+acmbsd cluster addto -host=user@cluster.example.org
+acmbsd cluster cron -enable=true
+* Note: 'cluster.example.org' it's host that already in cluster
