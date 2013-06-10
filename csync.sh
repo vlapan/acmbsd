@@ -41,4 +41,20 @@ csync.crontab() {
 	echo "*/$TIME * * * * root /usr/sbin/daemon -p $CSYNCPIDFILE /usr/local/sbin/csync2 -vxr"
 }
 
+csync.makecert() {
+	cat <<-EOF
+		PWDBAK=\`pwd\`
+		DIRNAME=\`cat distinfo | grep SIZE | cut -d"(" -f2 | cut -d"." -f1-2\`
+		cd $PWDBAK/work/$DIRNAME
+		make cert
+		cd $PWDBAK
+	EOF
+}
+
+csync.check() {
+	pkg.install.port gnutls security/gnutls
+	pkg.install.port csync2 net/csync2 csync.makecert
+	chmod 4550 /usr/local/sbin/csync2
+}
+
 #out.message 'csync: module loaded'

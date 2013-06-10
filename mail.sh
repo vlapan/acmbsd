@@ -55,8 +55,21 @@ mail.sendfile() {
 	SUBJECT="ACMBSD on `uname -n`: $2"
 	echo $3 > /tmp/msgbody
 	for MAILTO in $ADMINMAIL; do
-		metasend -b -s "$SUBJECT" -f /tmp/msgbody -m text/plain -e none -n -f $1 -m text/plain -e base64 -t $MAILTO
+		metasend -b -s "$SUBJECT" -S 99999999 -f /tmp/msgbody -m text/plain -e none -n -f $1 -m text/plain -e base64 -t $MAILTO
 	done
+}
+
+mail.check() {
+	mail.aliases.refresh
+
+	base.file.checkLine /etc/rc.conf sendmail_enable=\"NO\"
+	base.file.checkLine /etc/rc.conf sendmail_submit_enable=\"NO\"
+	base.file.checkLine /etc/rc.conf sendmail_outbound_enable=\"NO\"
+	base.file.checkLine /etc/rc.conf sendmail_msp_queue_enable=\"NO\"
+	base.file.checkLine /etc/rc.conf postfix_enable=\"YES\"
+
+	/usr/local/etc/rc.d/postfix stop
+	/usr/local/etc/rc.d/postfix start
 }
 
 #out.message 'mail: module loaded'

@@ -1,0 +1,29 @@
+Defaults env_reset
+Defaults env_keep += "BLOCKSIZE"
+Defaults env_keep += "CLICOLOR GREP_OPTIONS GREP_COLOR LSCOLORS COLORFGBG COLORTERM"
+Defaults env_keep += "LINES COLUMNS"
+Defaults env_keep += "SSH_AUTH_SOCK"
+Defaults env_keep += "TZ"
+Defaults env_keep += "DISPLAY XAUTHORIZATION XAUTHORITY"
+Defaults env_keep += "EDITOR VISUAL"
+Defaults env_keep += "HOME MAIL"
+Defaults env_keep += "HISTFILESIZE HISTSIZE HISTIGNORE HISTCONTROL"
+Defaults env_keep += "LOGNAME MM_CHARSET TERMCAP PROMPT_COMMAND INPUTRC SSH_* STY"
+## Uncomment if needed to preserve environmental variables related to the
+## FreeBSD pkg_* utilities and fetch.
+Defaults env_keep += "PKG_PATH PKG_DBDIR PKG_TMPDIR TMPDIR PACKAGEROOT PACKAGESITE PKGDIR FTP_PASSIVE_MODE"
+## Additionally uncomment if needed to preserve environmental variables
+## related to portupgrade
+Defaults env_keep += "PORTSDIR PORTS_INDEX PORTS_DBDIR PACKAGES PKGTOOLS_CONF"
+## Locale settings
+Defaults env_keep += "CHARSET LANG LANGUAGE LINGUAS LC_* _XKB_CHARSET"
+## X11 resource path settings
+Defaults env_keep += "XAPPLRESDIR XFILESEARCHPATH XUSERFILESEARCHPATH"
+
+Defaults log_output
+Defaults!/usr/bin/sudoreplay !log_output
+Defaults!/usr/local/bin/sudoreplay !log_output
+
+## User privilege specification
+root ALL=(ALL) ALL
+%wheel ALL=(ALL) ALL

@@ -1,23 +1,13 @@
 #!/bin/sh
 #TODO: set -e
-#TODO: function groups
-#TODO: 'systemcheck' command
 #TODO: use 'column', man column, (printf "PERM LINKS OWNER GROUP SIZE MONTH DAY "; printf "HH:MM/YEAR NAME\n"; ls -l | sed 1d) | column -t
 
 #TODO: generate scripts for bash-completion, example in ~/.bashrc
 #TODO: security, check for vulnerable packages 'portaudit -Fda'
 #TODO: speedup boot, in /boot/defaults/loader.conf insert 'autoboot_delay="-1"' and 'beastie_disable="YES"'
-#TODO: productivity, alias 'start', 'restart' and 'stop' commands in /usr/local/bin, 'start' acmbsd start $@
-#TODO: security, ipf rules (half done)
-#TODO: change all reports functions to 'cat'
 
 #FAQ: if ssh take long time to connect, add to /etc/ssh/sshd_config line 'UseDNS no'
 #DONE: if publicip empty then get extip instead
-
-#TODO: move to base.sh
-nl=`echo -e "a\\na"`
-nl="${nl#a}"
-nl="${nl%a}"
 
 System.setShutdown() {
 	RCACM=$1
@@ -120,186 +110,6 @@ System.updateAll() {
 	[ -n "$1" ] && AUTO=$1
 	Ports.update
 	System.update
-}
-cfg.login.conf() {
-	cat <<-EOF
-		# Remember to rebuild the database after each change to this file:
-		#       cap_mkdb /etc/login.conf
-		default:\\
-						:passwd_format=md5:\\
-						:copyright=/etc/COPYRIGHT:\\
-						:welcome=/etc/motd:\\
-						:setenv=MAIL=/var/mail/$,BLOCKSIZE=K,FTP_PASSIVE_MODE=YES:\\
-						:path=/sbin /bin /usr/sbin /usr/bin /usr/games /usr/local/sbin /usr/local/bin ~/bin:\\
-						:nologin=/var/run/nologin:\\
-						:cputime=unlimited:\\
-						:datasize=unlimited:\\
-						:stacksize=unlimited:\\
-						:memorylocked=unlimited:\\
-						:memoryuse=unlimited:\\
-						:filesize=unlimited:\\
-						:coredumpsize=unlimited:\\
-						:openfiles=unlimited:\\
-						:maxproc=unlimited:\\
-						:sbsize=unlimited:\\
-						:vmemoryuse=unlimited:\\
-						:priority=0:\\
-						:ignoretime@:\\
-						:umask=002:\\
-						:charset=UTF-8:\\
-						:lang=en_US.UTF-8:
-		#
-		# A collection of common class names - forward them all to 'default'
-		# (login would normally do this anyway, but having a class name
-		#  here suppresses the diagnostic)
-		#
-		standard:\\
-						:tc=default:
-		xuser:\\
-						:tc=default:
-		staff:\\
-						:tc=default:
-		daemon:\\
-						:tc=default:
-		news:\\
-						:tc=default:
-		dialer:\\
-						:tc=default:
-		#
-		# Root can always login
-		#
-		# N.B.  login_getpwclass(3) will use this entry for the root account,
-		#       in preference to 'default'.
-		root:\\
-						:ignorenologin:\\
-						:tc=default:
-	EOF
-}
-cfg.screenrc() {
-	cat <<-EOF
-		# Make the bell visible instead of audible
-		#vbell on
-		#vbell_msg "Ding"
-		#vbellwait 0
-
-		# Set default encoding to UTF-8
-		encoding UTF-8
-		defencoding UTF-8
-		defutf8 on
-
-		# Other
-		altscreen on
-		msgminwait 0
-		ignorecase on
-		defscrollback 10000
-		startup_message off
-		termcapinfo xterm|xterms|xs|rxvt ti@:te@
-		caption string "%?%F%{= Bk}%? %C%A %D %d-%m-%Y %{= kB} %t%= %?%F%{= Bk}%:%{= wk}%? %n "
-		hardstatus alwayslastline
-		hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B} %d/%m %{W}%c %{g}]'
-	EOF
-}
-cfg.nanorc() {
-	cat <<-EOF
-		set historylog
-		set nowrap
-		set smooth
-		set suspend
-		set tabsize 4
-		# set softwrap
-		include "/usr/local/share/nano/nanorc.nanorc"
-		include "/usr/local/share/nano/css.nanorc"
-		include "/usr/local/share/nano/html.nanorc"
-		include "/usr/local/share/nano/patch.nanorc"
-		include "/usr/local/share/nano/man.nanorc"
-		include "/usr/local/share/nano/java.nanorc"
-		include "/usr/local/share/nano/awk.nanorc"
-		include "/usr/local/share/nano/sh.nanorc"
-		include "/usr/local/share/nano/xml.nanorc"
-		include "/usr/local/share/nano/makefile.nanorc"
-	EOF
-}
-cfg.profile() {
-	cat <<-EOF
-		umask 002
-		export EDITOR=nano
-		export VISUAL=nano
-		export HISTSIZE=5000
-		export HISTFILESIZE=20000
-		export HISTCONTROL=erasedups
-		export PROMPT_COMMAND='history -a; cp \$HISTFILE /tmp/hist_\$USER; awk -f $ACMBSDPATH/scripts/awk/reverse.awk /tmp/hist_\$USER | awk -f $ACMBSDPATH/scripts/awk/uniq.awk | awk -f $ACMBSDPATH/scripts/awk/reverse.awk > \$HISTFILE; rm /tmp/hist_\$USER; history -c; history -r;'
-		# ignore some common commands when searching history
-		export HISTIGNORE="dir:la:exit:jobs"
-		export CLICOLOR=YES
-		export LSCOLORS=ExGxFxdxCxDxDxhbadExEx
-		export GREP_OPTIONS='--binary-files=without-match --color=auto'
-		export GREP_COLOR='00;38;5;157'
-		export INPUTRC=/etc/inputrc
-		#[ "\${BASH-no}" != no -a -r /usr/local/etc/bashprofile ] && . /usr/local/etc/bashprofile
-		[ -x /usr/local/bin/screen ] && [ "\$TERM" != screen ] && (
-			export PS1='\[\e[0;32m\]\u@\h\[\e[m\]:\[\e[0;34m\]\w\[\e[m\]\[\e[0;32m\]\$\[\e[m\] \[\e[0m\]'
-			/usr/local/bin/screen -s /usr/local/bin/bash -q -O -U -D -R
-			echo 'this is your main shell, you should type "exit" and reconnect to get you "screen" session created.'
-		)
-	EOF
-}
-cfg.inputrc() {
-	cat <<-EOF
-		"\e[1~": beginning-of-line
-		"\e[4~": end-of-line
-		"\e[5~": beginning-of-history
-		"\e[6~": end-of-history
-		"\e[3~": delete-char
-		"\e[2~": quoted-insert
-		"\e[5C": forward-word
-		"\e[5D": backward-word
-		"\e\e[C": forward-word
-		"\e\e[D": backward-word
-		set bell-style visible
-		set expand-tilde on
-		set convert-meta off
-		set input-meta on
-		set output-meta on
-		set show-all-if-ambiguous on
-		set visible-stats on
-		set completion-ignore-case on
-		set mark-symlinked-directories on
-		set echo-control-characters off
-	EOF
-}
-
-cfg.sudoers() {
-	cat <<-EOF
-		Defaults env_reset
-		Defaults env_keep += "BLOCKSIZE"
-		Defaults env_keep += "CLICOLOR GREP_OPTIONS GREP_COLOR LSCOLORS COLORFGBG COLORTERM"
-		Defaults env_keep += "LINES COLUMNS"
-		Defaults env_keep += "SSH_AUTH_SOCK"
-		Defaults env_keep += "TZ"
-		Defaults env_keep += "DISPLAY XAUTHORIZATION XAUTHORITY"
-		Defaults env_keep += "EDITOR VISUAL"
-		Defaults env_keep += "HOME MAIL"
-		Defaults env_keep += "HISTFILESIZE HISTSIZE HISTIGNORE HISTCONTROL"
-		Defaults env_keep += "LOGNAME MM_CHARSET TERMCAP PROMPT_COMMAND INPUTRC SSH_* STY"
-		## Uncomment if needed to preserve environmental variables related to the
-		## FreeBSD pkg_* utilities and fetch.
-		Defaults env_keep += "PKG_PATH PKG_DBDIR PKG_TMPDIR TMPDIR PACKAGEROOT PACKAGESITE PKGDIR FTP_PASSIVE_MODE"
-		## Additionally uncomment if needed to preserve environmental variables
-		## related to portupgrade
-		Defaults env_keep += "PORTSDIR PORTS_INDEX PORTS_DBDIR PACKAGES PKGTOOLS_CONF"
-		## Locale settings
-		Defaults env_keep += "CHARSET LANG LANGUAGE LINGUAS LC_* _XKB_CHARSET"
-		## X11 resource path settings
-		Defaults env_keep += "XAPPLRESDIR XFILESEARCHPATH XUSERFILESEARCHPATH"
-
-		Defaults log_output
-		Defaults!/usr/bin/sudoreplay !log_output
-		Defaults!/usr/local/bin/sudoreplay !log_output
-
-		## User privilege specification
-		root ALL=(ALL) ALL
-		%wheel ALL=(ALL) ALL
-	EOF
 }
 
 #TODO: H2
@@ -562,29 +372,6 @@ Object.create() {
 	eval "${EVAL}" && eval "${3}" && ${THIS}.init || return 1
 	return 0
 }
-Group.create() {
-	#Options:	1 - Group name
-	local THIS=$1
-	[ "$THIS" ] && Group.isGroup $THIS || return 1
-	Function.isExist $THIS.isObject && return 0
-	local EVAL="`sed s/THIS/$THIS/g $ACMBSDPATH/scripts/group.sh`"
-	Object.create $THIS group "$EVAL"
-	[ "$2" ] && $THIS.createInstances
-	return 0
-}
-Instance.create() {
-	#Options:	1 - Instance name
-	local THIS=$1
-	#TODO: check isInstance
-	[ "$THIS" ] || return 1
-	local GROUPNAME=`echo $THIS | tr -d '[0-9]'`
-	Group.isGroup $GROUPNAME || return 1
-	Function.isExist $GROUPNAME.isObject || Group.create $GROUPNAME
-	Function.isExist $THIS.isObject && return 0
-	local EVAL="`sed s/THIS/$THIS/g $ACMBSDPATH/scripts/instance.sh`"
-	Object.create $THIS instance "$EVAL"
-	return 0
-}
 System.cooldown() {
 	out.message 'Cooldown...' waitstatus
 	local COUNT=0
@@ -596,281 +383,6 @@ System.cooldown() {
 		fi
 		sleep 1
 		echo -n .
-	done
-}
-Group.static() {
-	Group.updateAll() {
-		for GROUPNAME in $GROUPS; do
-			Group.create $GROUPNAME && $GROUPNAME.isExist && $GROUPNAME.update
-		done
-	}
-	Group.startAll() {
-		for GROUPNAME in $1; do
-			Group.create $GROUPNAME && $GROUPNAME.isExist && $GROUPNAME.start
-		done
-		Watchdog.check
-	}
-	Group.stopAll() {
-		for GROUPNAME in $1; do
-			Group.create $GROUPNAME && $GROUPNAME.isExist && $GROUPNAME.stop
-		done
-		Watchdog.check
-	}
-	Group.getData() {
-		if [ "$1" ]; then
-			GROUPNAME=$1
-		fi
-		if Group.isGroup $GROUPNAME && Group.isExist $GROUPNAME ; then
-			GROUPID="$(Group.default.id ${GROUPNAME})"
-			GROUPPATH=${DEFAULTGROUPPATH}/${GROUPNAME}
-			PUBLIC=${GROUPPATH}/public
-			PUBLICBACKUP=${GROUPPATH}/public-backup
-			PROTECTED=${GROUPPATH}/protected
-			LOGS=${GROUPPATH}/logs
-			SERVERSDIR=${PROTECTED}/conf/servers
-			SERVERSCONF=${PROTECTED}/conf/servers.xml
-			WEB=${PROTECTED}/web
-			if [ -f ${GROUPPATH}/public/version/version ]; then
-				ACMVERSION=$(cat ${GROUPPATH}/public/version/version)
-			else
-				ACMVERSION=0
-			fi
-			MEMORY=$(cfg.getValue "${GROUPNAME}-memory")
-			EXTIP=$(cfg.getValue "${GROUPNAME}-extip")
-			TYPE=$(cfg.getValue "${GROUPNAME}-type")
-			BRANCH=$(cfg.getValue "${GROUPNAME}-branch")
-			INSTANCELIST=$(ls $GROUPPATH | fgrep -w private | cut -d- -f1)
-			Group.instances.getActive
-			INSTANCESCOUNT=$(echo ${INSTANCELIST} | wc -w | tr -d ' ')
-			return 0
-		fi
-		return 1
-	}
-	Group.groups.getActive() {
-		[ -z "$ACTIVATEDGROUPS" -o "$1" ] && ACTIVATEDGROUPS=`echo "$DATA" | grep -w activated | cut -d- -f1`
-		echo $ACTIVATEDGROUPS
-	}
-	Group.groups.getStatus() {
-		printf "Groups list: available (${txtbld}${GROUPS}${txtrst}), active (${txtbld}${ACTIVATEDGROUPS}${txtrst})\n"
-	}
-	Group.instances.getActive() {
-		ACTIVEINSTANCES=""
-		local ITEM
-		for ITEM in ${INSTANCELIST}; do
-			local ITEMPRIVATE=${GROUPPATH}/${ITEM}-private
-			local ITEMDAEMONFLAG=${ITEMPRIVATE}/daemon.flag
-			if [ -f ${ITEMDAEMONFLAG} ]; then
-			 	if [ -z "${ACTIVEINSTANCES}" ]; then
-					ACTIVEINSTANCES="${ITEM}"
-			 	else
-			 		ACTIVEINSTANCES="${ACTIVEINSTANCES} ${ITEM}"
-			 	fi
-			fi
-		done
-	}
-	Group.default.id() {
-		case $1 in
-			live)
-				echo 20
-			;;
-			test)
-				echo 40
-			;;
-			devel)
-				echo 60
-			;;
-			temp)
-				echo 80
-			;;
-			*)
-				echo 100
-		esac
-	}
-	Group.default.loglevel() {
-		case $1 in
-			live)
-				echo NORMAL
-			;;
-			test)
-				echo NORMAL
-			;;
-			devel)
-				echo DEBUG
-			;;
-			*)
-				echo DEBUG
-		esac
-	}
-	Group.default.ea() {
-		echo $1 | fgrep -qw live && echo disable || echo enable
-	}
-	Group.default.branch(){
-		echo $1 | fgrep -qw live && echo stable || echo release
-	}
-	Group.reset() {
-		rm -rdf $PROTECTED/boot.properties
-		for INSTANCE in $INSTANCELIST; do
-			$INSTANCE.reset
-		done
-	}
-	Group.isDigit() {
-		echo 1 2 3 4 5 6 7 8 9 | fgrep -qw $1 && return 0 || return 1
-	}
-	Group.isGroup() {
-		[ "$1" ] && echo $GROUPSNAME | fgrep -qw $1 && return 0 || return 1
-	}
-	#TODO: stale
-	Group.isBranch() {
-		echo stable release current | fgrep -qw $1 && return 0 || return 1
-	}
-	Group.isLogLevel() {
-		echo NORMAL DEBUG DEVEL MINIMAL | fgrep -qw $1 && return 0 || return 1
-	}
-	Group.isOptimizeMode() {
-		echo default speed size | fgrep -qw $1 && return 0 || return 1
-	}
-	Group.isType() {
-		echo minimal standard extended parallel | fgrep -qw $1 && return 0 || return 1
-	}
-	Group.isEA() {
-		echo enable disable | fgrep -qw $1 && return 0 || return 1
-	}
-	Group.isMemory() {
-		echo $1 | fgrep -qoE "\b([0-9]*?)m\b" && return 0 || return 1
-	}
-	Group.isExist() {
-		[ "$2" = passAll -a "$1" = all ] && return 0
-		#TODO: '-z "$1"'?
-		[ -z "$1" -o -z "`echo $GROUPS | fgrep -w $1`" ] || return 0
-		out.error "given group '$1' is not exist!"
-		return 1
-	}
-	Group.isActive() {
-		[ "$2" = passAll -a "$1" = all ] && return 0
-		echo `Group.groups.getActive` | fgrep -qw $1 && return 0
-		out.error "given group '$1' is not active!"
-		return 1
-	}
-	Group.isPassive() {
-		echo `Group.groups.getActive` | fgrep -qw $1 || return 0
-		out.error "given group '$1' is active!"
-		return 1
-	}
-	return 0
-}
-Instance.static() {
-	Instance.getData() {
-		if [ "${1}" ]; then
-			INSTANCE=${1}
-		fi
-		PRIVATE=${GROUPPATH}/${INSTANCE}-private
-		ACMOUT=${LOGS}/stdout-${INSTANCE}
-		ACMOUTLAST=${LOGS}/stdout-${INSTANCE}.prev
-		RESTARTFILE=${PRIVATE}/control/restart
-		DAEMONFLAG=${PRIVATE}/daemon.flag
-		if [ -f ${DAEMONFLAG} ]; then
-			DAEMONPID=$(cat ${DAEMONFLAG})
-		fi
-		INSTANCENUMBER=$(echo ${INSTANCE} | tr -d "[a-z]")
-		INTIP="172.16.0.$((${GROUPID}+${INSTANCENUMBER}-1))"
-	}
-	Instance.isExist() {
-		[ "$2" = "passAll" -a "$1" = "all" ] && return 0
-		[ -z "$1" -o -z "`echo $INSTANCELIST | fgrep -w $1`" ] || return 0
-		out.error "given instance '$1' do not exist!"
-		return 1
-	}
-	return 0
-}
-Watchdog.start(){
-	out.message "Starting watchdog process..." waitstatus
-	/usr/sbin/daemon -p $WATCHDOGFLAG $0 watchdog > $ACMBSDPATH/watchdog.log 2>&1
-	out.status green DONE
-}
-Watchdog.check() {
-	if [ -e "$WATCHDOGFLAG" ]; then
-		out.message 'Check for watchdog process...' waitstatus
-		if ! System.daemon.isExist `cat $WATCHDOGFLAG`; then
-			out.status yellow 'NOT FOUND'
-			rm $WATCHDOGFLAG
-			Watchdog.start
-		else
-			out.status green FOUND
-		fi
-	else
-		Watchdog.start
-	fi
-}
-Watchdog.restart() {
-	if [ -e "$WATCHDOGFLAG" ]; then
-		out.message 'Check for watchdog process...' waitstatus
-		if ! System.daemon.isExist `cat $WATCHDOGFLAG`; then
-			out.status yellow 'NOT FOUND'
-			rm $WATCHDOGFLAG
-			Watchdog.start
-		else
-			out.status green FOUND
-			out.message 'Killing watchdog process...' waitstatus
-			kill `cat $WATCHDOGFLAG`
-			rm $WATCHDOGFLAG
-			out.status green DONE
-			Watchdog.start
-		fi
-	else
-		Watchdog.start
-	fi
-}
-#TODO: check and clean
-Watchdog.command() {
-	while true; do
-		sleep 3
-		if [ ! -f $WATCHDOGFLAG ]; then
-			exit 1
-		fi
-		cfg.reload
-		for GROUPNAME in $GROUPS; do
-			Group.create $GROUPNAME
-			Named.check
-		done
-		ACTIVATEDGROUPS=`Group.groups.getActive fresh`
-		for GROUPNAME in $ACTIVATEDGROUPS; do
-			Group.create $GROUPNAME
-			echo
-			echo "Active instances: "`$GROUPNAME.getInstanceActive`
-			for INSTANCE in `$GROUPNAME.getInstanceActive`; do
-				Instance.create $INSTANCE
-				echo -n "Check for '$INSTANCE'..."
-				if System.daemon.isExist `$INSTANCE.getPID`; then
-					out.status green ONLINE
-				else
-					out.status yellow OFFLINE
-					if [ -f `$INSTANCE.getField RESTARTFILE` ]; then
-						out.info "instance crash detected!"
-						FAILS=`cfg.getValue $GROUPNAME-fails`
-						LASTFAIL=`cfg.getValue $GROUPNAME-lastfail`
-						test "$FAILS" && FAILS=$(($FAILS+1)) || FAILS=1
-						cfg.setValue $GROUPNAME-fails "$FAILS" && cfg.setValue $GROUPNAME-lastfail `date +%s`
-						if [ "$LASTFAIL" ]; then
-							local TIME = $(($(date +%s)-${LASTFAIL}))
-							echo $TIME
-						fi
-						#TODO: last time in human readable format
-						tail -n 2000 `$GROUPNAME.getField LOGS`/stdout-$INSTANCE > /tmp/acmbsd.$INSTANCE.stdout
-						mail.sendfile "/tmp/acmbsd.$INSTANCE.stdout" "daemon '$GROUPNAME' instance crash detected" "global fail count: $FAILS, last fail $TIME seconds ago"
-						rm /tmp/acmbsd.$INSTANCE.stdout
-					fi
-					$INSTANCE.startDaemon
-				fi
-			done
-		done
-		farm.listCheck
-		SERVICETIME=`cfg.getValue autotime`
-		LASTSERVICETIME=`cfg.getValue lastautotime`
-		DAY=`date +%d`
-		if [ "$DAY" != "$LASTSERVICETIME" -a "`date +%H:%M`" = "$SERVICETIME" ]; then
-			cfg.setValue lastautotime $DAY
-			$0 service > /tmp/acmbsd.service.log &
-		fi
 	done
 }
 Script.update.check() {
@@ -1226,386 +738,11 @@ domainadd() {
 		out.status green OK
 	fi
 }
-Report.domains() {
-	printf "<p>"
-	printf "<b>DOMAINS:</b><br/>\n"
-	printf "<table cellspacing=\"1\" cellpadding=\"3\" border=\"1\">\n"
-	for GROUPNAME in ${GROUPS}; do
-		HTMLGROUPS="${HTMLGROUPS}<th>${GROUPNAME}</th>"
-	done
-	printf "<tr><th>DOMAIN</th>${HTMLGROUPS}<th>DBSIZE</th><th>DBCONN</th><th>OWNERS</th></tr>\n"
-	DOMAINS=""
-	for GROUPNAME in ${GROUPS}; do
-		Group.getData ${GROUPNAME}
-		if [ ! -d ${WEB} ]; then
-			continue
-		fi
-		if [ -z "${WEBS}" ]; then
-			WEBS="${WEB}"
-		else
-			WEBS="${WEBS} ${WEB}"
-		fi
-		#REGEX: zone name
-		for DOMAIN in $(ls ${WEB} | grep -E '\b[a-z0-9]*\.[a-z0-9\.\-]*\b'); do
-			if echo "${DOMAINLIST}" | fgrep -w ${DOMAIN} > /dev/null 2>&1 ; then
-				continue
-			fi
-			if [ -z "${DOMAINLIST}" ]; then
-				DOMAINLIST="${DOMAIN}"
-			else
-				DOMAINLIST="${DOMAINLIST} ${DOMAIN}"
-			fi
-		done
-	done
-	DUDATA=$(nice -n 30 du -ch -d 1 ${WEBS})
-	for DOMAIN in ${DOMAINLIST}; do
-		printf "<tr><td>${DOMAIN}</td>"
-		for WEB in ${WEBS}; do
-			DOMAINSIZE=$(echo "${DUDATA}" | fgrep -m 1 -w ${WEB}/${DOMAIN} | cut -f 1)
-			if [ -z "${DOMAINSIZE}" ]; then
-				DOMAINSIZE="-"
-			fi
-			printf "<td>${DOMAINSIZE}</td>"
-		done
-		DBSIZE="-"
-		if Database.check ${DOMAIN} > /dev/null 2>&1 ; then
-			DBSIZE=$(Database.getSize ${DOMAIN})
-		fi
-		Print.owners() {
-			SQL="SELECT login, email FROM umUserAccounts JOIN umUserGroups USING(userId) WHERE groupId='def.supervisor'"
-			psql -tA -F' ' -c "$SQL" $DOMAIN pgsql | while read DOMAINLOGIN DOMAINEMAIL; do
-				DOMAINEMAIL=`echo $DOMAINEMAIL | egrep '([[:alnum:]_.]+@[[:alnum:]_]+?\.[[:alpha:].]{2,6})' || printf -`
-				printf "$DOMAINLOGIN ($DOMAINEMAIL)|"
-			done
-		}
-		Domain.db.conn.length() {
-			ps -ax | fgrep -w ${DOMAIN} | fgrep -v ${DOMAIN}. | fgrep -v fgrep | wc -l | tr -d ' '
-		}
-		cat <<-EOF
-			<td>
-				$DBSIZE
-			</td>
-			<td>
-				`Domain.db.conn.length`
-			</td>
-			<td>
-				`Print.owners | sed 's/|/<br \/>/g'`
-			</td>
-		</tr>
-		EOF
-	done
-	printf "</table></p>\n"
-}
-Report.daemons(){
-	WATCHDOG="offline"
-	if [ -f "${WATCHDOGFLAG}" ]; then
-		if System.daemon.isExist $(cat ${WATCHDOGFLAG}); then
-			WATCHDOG="online"
-		fi
-	fi
-	POSTGRESQL="offline"
-	if /usr/local/etc/rc.d/postgresql status > /dev/null 2>&1 ; then
-		POSTGRESQL="online"
-	fi
-	cat <<-EOF
-		<p>
-			<b>DAEMONS:</b>
-			<br/>
-			<table cellspacing=\"1\" cellpadding=\"3\" border=\"1\">
-				<tr>
-					<th>PostgreSQL</th>
-					<th>Watchdog</th>
-				</tr>
-				<tr>
-					<td>$POSTGRESQL</td>
-					<td>$WATCHDOG</td>
-				</tr>
-			</table>
-		</p>
-	EOF
-}
-Report.ipnat() {
-	local IPNATDATA=$(/sbin/ipnat -l | fgrep -w RDR)
-	local IPNATCONN=$(echo "${IPNATDATA}" | grep RDR | wc -l | tr -d ' ')
-	local RESULT=""
-	Report.ipnat.printRow() {
-		cat <<-EOF
-			<tr>
-				<td>
-					$1
-				</td>
-				<td>
-					$2
-				</td>
-				<td>
-					$3
-				</td>
-			</tr>
-		EOF
-	}
-	for GROUPNAME in ${GROUPS}; do
-		EXTIP=$(cfg.getValue ${GROUPNAME}-extip)
-		for IP in ${EXTIP}; do
-			COUNT=$(echo "${IPNATDATA}" | fgrep -w ${IP} | wc -l | tr -d " ")
-			ROW=`Report.ipnat.printRow ${IP} ${GROUPNAME} ${COUNT}`
-			RESULT="$RESULT $ROW"
-		done
-	done
 
-	cat <<-EOF
-		<div>
-			<b>IPNAT:</b>
-			<table cellspacing="0" cellpadding="0" border="1">
-				<tr>
-					<th>External IP</th>
-					<th>Group</th>
-					<th>IPNAT redirects</th>
-				</tr>
-				$RESULT
-				<tr>
-					<td>*</td>
-					<td>*</td>
-					<td>${IPNATCONN}</td>
-				</tr>
-			</table>
-		</div>
-	EOF
-}
 System.status.getLoadAvg(){
 	echo $(sysctl -n vm.loadavg | tr -d "{}")
 }
-Report.system() {
-	OSUPTIME=$(/usr/bin/uptime | cut -d',' -f1 | sed 's/  / /g' | tr ' ' ',' | cut -d',' -f4-5 | tr ',' ' ')
-	OSLOAD=$(System.status.getLoadAvg)
-	JAVAVERSION=$(/usr/sbin/pkg_info | grep openjdk | cut -d' ' -f1)
-	POSTGRESQLVERSION=$(/usr/sbin/pkg_info | grep postgresql-server | cut -d'-' -f3 | cut -d' ' -f1)
 
-	Print.branchVersions() {
-		for ITEM in `ls $ACMCM5PATH/$BRANCH`; do
-			VERSIONFILE=$ACMCM5PATH/$ITEM/version/version
-			VERSIONDATE=`getfiledate ${VERSIONFILE}`
-			cat <<-EOF
-				&nbsp;&nbsp;&nbsp;&nbsp;
-				$ITEM: <b>`cat ${VERSIONFILE}`</b> (${VERSIONDATE})
-				<br />
-			EOF
-		done
-	}
-	cat <<-EOF
-		<p>
-			FreeBSD <b>${OSVERSION}</b> on <b>${ARCH}</b> platform with <b>${OSUPTIME}</b> uptime and <b>${OSLOAD}</b> load averages
-			<br />
-			ACMBSD: <b>${VERSION}</b>
-			<br />
-			JAVA: <b>${JAVAVERSION}</b>
-			<br />
-			PostgreSQL: <b>${POSTGRESQLVERSION}</b>
-			<br />
-			Locally stored ACM.CM5:
-			<br />
-			`Print.branchVersions`
-		</p>
-		<p>
-			<b>GLOBAL SETTINGS:</b>
-			<br />
-			<table cellspacing="1" cellpadding="3" border="1">
-				<tr>
-					<th>Groups folder path</th>
-					<th>Administrator's e-mail</th>
-					<th>Maintenance time</th>
-					<th>Backup folder path</th>
-					<th>Backups limit</th>
-				</tr>
-				<tr>
-					<td>${DEFAULTGROUPPATH}</td>
-					<td>$(cfg.getValue adminmail)</td>
-					<td>$(cfg.getValue autotime)</td>
-					<td>$BACKUPPATH</td>
-					<td>$(cfg.getValue backuplimit)</td>
-				</tr>
-			</table>
-		</p>
-	EOF
-}
-Report.connections() {
-	SOCKSTATDATA=$(sockstat | fgrep java)
-	DBCONN=$(echo "${SOCKSTATDATA}" | fgrep 5432 | wc -l | tr -d ' ')
-	DBMAXCONN=$(cat ${PGDATAPATH}/postgresql.conf | grep 'max_connections =' | tr '\t' ' ' | cut -d ' ' -f 3)
-	ACMINCONN=$(echo "${SOCKSTATDATA}" | fgrep -v 5432 | fgrep -v '*' | fgrep 172.16.0 | wc -l | tr -d ' ')
-	ACMOUTCONN=$(echo "${SOCKSTATDATA}" | fgrep -v 5432 | fgrep -v '*' | fgrep -v 172.16.0 | fgrep -v 127.0.0 | fgrep tcp4 | wc -l | tr -d ' ')
-	cat <<-EOF
-		<p>
-			<b>CONNECTIONS:</b>
-			<br />
-			<table cellspacing="1" cellpadding="3" border="1">
-				<tr>
-					<th>PGSQL</th>
-					<th>ACM.CM IN</th>
-					<th>ACM.CM OUT</th>
-				</tr>
-				<tr>
-					<td>${DBCONN}/${DBMAXCONN}</td>
-					<td>${ACMINCONN}</td>
-					<td>${ACMOUTCONN}</td>
-				</tr>
-			</table>
-		</p>
-	EOF
-}
-Report.diskusage() {
-	DUDATA=$(nice -n 30 du -ch -d 0 $ACMBSDPATH $DEFAULTGROUPPATH $BACKUPPATH $PGDATAPATH)
-	TOTALSIZE=$(echo "$DUDATA" | fgrep -w total | cut -f 1)
-	SYSTEMSIZE=$(echo "$DUDATA" | fgrep -w $ACMBSDPATH | cut -f 1)
-	GROUPSIZE=$(echo "$DUDATA" | fgrep -w $DEFAULTGROUPPATH | cut -f 1)
-	BACKUPSIZE=$(echo "$DUDATA" | fgrep -w $BACKUPPATH | cut -f 1)
-	PGSIZE=$(echo "$DUDATA" | fgrep -w $PGDATAPATH | cut -f 1)
-	cat <<-EOF
-		<p>
-			<b>DISK USAGE:</b>
-			<br />
-			<table cellspacing="1" cellpadding="3" border="1">
-				<tr>
-					<th>TOTAL</th>
-					<th>SYSTEM</th>
-					<th>GROUPS</th>
-					<th>BACKUPS</th>
-					<th>PGSQL</th>
-				</tr>
-				<tr>
-					<td>$TOTALSIZE</td>
-					<td>$SYSTEMSIZE</td>
-					<td>$GROUPSIZE</td>
-					<td>$BACKUPSIZE</td>
-					<td>$PGSIZE</td>
-				</tr>
-			</table>
-		</p>
-	EOF
-}
-Report.groups() {
-	DUDATA=$(nice -n 30 du -ch -d 3 ${DEFAULTGROUPPATH})
-	for GROUPNAME in ${GROUPS} ; do
-		Group.getData ${GROUPNAME}
-		ACMBACKUPVERSION="-"
-		if [ -e "${GROUPPATH}/public-backup/version/version" ]; then
-			ACMBACKUPVERSION=$(cat ${GROUPPATH}/public-backup/version/version)
-		fi
-		if [ "${ACTIVEINSTANCES}" ]; then
-			ACTIVATED=true
-		else
-			ACTIVATED=false
-		fi
-		DBCONN=$(echo "${SOCKSTATDATA}" | fgrep 5432 | fgrep ${GROUPNAME} | wc -l | tr -d ' ')
-		ACMCONN=$(echo "${SOCKSTATDATA}" | fgrep -v 5432 | fgrep -v '*' | fgrep '172.16.0' | fgrep ${GROUPNAME} | wc -l | tr -d ' ')
-
-		Print.instance() {
-			for INSTANCE in ${INSTANCELIST} ; do
-				Instance.getData
-				INSTANCECACHESIZE=$(echo "${DUDATA}" | fgrep -w ${PRIVATE}/cache | cut -f 1)
-				if [ -z ${INSTANCECACHESIZE} ]; then
-					INSTANCECACHESIZE=" 0B"
-				fi
-				INSTANCEDATASIZE=$(echo "${DUDATA}" | fgrep -w ${PRIVATE}/data | cut -f 1)
-				if [ -z ${INSTANCEDATASIZE} ]; then
-					INSTANCEDATASIZE=" 0B"
-				fi
-				UPTIME="-"
-				if [ -e "${DAEMONFLAG}" ]; then
-					PID=$(cat ${DAEMONFLAG})
-					if System.daemon.isExist ${PID}; then
-						ONLINE=online
-						Instance.create ${INSTANCE} > /dev/null 2>&1
-						STARTTIME=$(${INSTANCE}.getStartTime)
-						if [ "${STARTTIME}" ]; then
-							NOW=$(date "+%s")
-							TIME=$((NOW-STARTTIME))
-							UPTIME=$(getuptime ${TIME})
-						fi
-					else
-						ONLINE=offline
-					fi
-				else
-					ONLINE=offline
-				fi
-				if [ "${ONLINE}" = "offline" -a -f "${PRIVATE}/lastuptime" ]; then
-					UPTIME=$(cat ${PRIVATE}/lastuptime)
-				fi
-				DBCONN=$(echo "${SOCKSTATDATA}" | fgrep 5432 | fgrep ${INSTANCE} | wc -l | tr -d ' ')
-				ACMCONN=$(echo "${SOCKSTATDATA}" | fgrep -v 5432 | fgrep -v '*' | fgrep '172.16.0' | fgrep ${INSTANCE} | wc -l | tr -d ' ')
-				cat <<-EOF
-					<tr>
-						<td>${INSTANCE}</td>
-						<td>${INTIP}</td>
-						<td>${ONLINE}</td>
-						<td>${INSTANCECACHESIZE}</td>
-						<td>${INSTANCEDATASIZE}</td>
-						<td>${UPTIME}</td>
-						<td>${DBCONN}</td>
-						<td>${ACMCONN}</td>
-					</tr>
-				EOF
-			done
-		}
-		cat <<-EOF
-			<p>
-				<b>GROUPS:</b>
-				<br />
-				<b>$(echo ${GROUPNAME} | tr '[a-z]' '[A-Z]')</b>
-				<br />
-				<table cellspacing="1" cellpadding="3" border="1">
-					<tr>
-						<th>ACMVERSION</th>
-						<th>ACMBACKUPVERSION</th>
-						<th>ACTIVE</th>
-						<th>MEMORY</th>
-						<th>EXTIP</th>
-						<th>BRANCH</th>
-						<th>TYPE</th>
-						<th>DBCONN</th>
-						<th>ACMCONN</th>
-					</tr>
-					<tr>
-						<td>${ACMVERSION}</td>
-						<td>${ACMBACKUPVERSION}</td>
-						<td>${ACTIVATED}</td>
-						<td>${MEMORY}</td>
-						<td>${EXTIP}</td>
-						<td>${BRANCH}</td>
-						<td>${TYPE}</td>
-						<td>${DBCONN}</td>
-						<td>${ACMCONN}</td>
-					</tr>
-				</table>
-				<table cellspacing="1" cellpadding="3" border="1">
-					<tr>
-						<th>INSTANCE</th>
-						<th>INTIP</th>
-						<th>STATUS</th>
-						<th>CACHESIZE</th>
-						<th>DATASIZE</th>
-						<th>UPTIME</th>
-						<th>DBCONN</th>
-						<th>ACMCONN</th>
-					</tr>
-					`Print.instance`
-				</table>
-			</p>
-		EOF
-	done
-}
-Report.getFullReport() {
-	cat <<-EOF
-		<html>
-			`Report.system`
-			`Report.ipnat`
-			`Report.domains`
-			`Report.daemons`
-			`Report.connections`
-			`Report.diskusage`
-			`Report.groups`
-		</html>
-	EOF
-}
 System.checkPermisson() {
 	#TODO: use '|| System.isSystemGroup'
 	System.isRoot && return 0
@@ -1708,7 +845,7 @@ Syntax.domain() {
 }
 Syntax.cluster() {
 	CMDNAME='cluster'
-	out.syntax "${CMDNAME} ( activate | addto | cron | connect | vpninit | sync )"
+	out.syntax "${CMDNAME} ( activate | addto | cron | connect | vpninit | sync | forget )"
 	out.example
 	out.str "${CMDNAME} ${txtbld}activate${txtrst}"
 	out.str "${CMDNAME} ${txtbld}addto${txtrst} -host=user@server1.cluster.net"
@@ -1716,6 +853,7 @@ Syntax.cluster() {
 	out.str "${CMDNAME} ${txtbld}connect${txtrst}"
 	out.str "${CMDNAME} ${txtbld}vpninit${txtrst}"
 	out.str "${CMDNAME} ${txtbld}sync${txtrst}"
+	out.str "${CMDNAME} ${txtbld}forget${txtrst} -host=server1.cluster.net (for now it's just 'csync2')"
 }
 Syntax.help() {
 	filtercommand(){
@@ -1741,7 +879,7 @@ SCRIPTNAME=acmbsd
 GROUPSNAME='devel test live temp'
 RUNSTR="$0 $@"
 COMMAND=$1
-VERSION=151
+VERSION=154
 
 System.checkPermisson || { System.runAsUser root "$RUNSTR"; exit 1; }
 
@@ -1779,12 +917,12 @@ load.module() {
 	done
 	return 0
 }
-load.module out base cfg data named mail zone
 
 COMMENTEDCOMMANDS=`cat $0 | fgrep -A1 '#COMMAND:' | fgrep -v fgrep`
 COMMANDS=`echo "$COMMENTEDCOMMANDS" | fgrep -oE '\b[a-z]*\)?\b'`
 [ "$COMMAND" ] && echo "$COMMANDS" | fgrep -qw $COMMAND || Syntax.help exit
-Group.static && Instance.static
+
+load.module out base cfg data named mail group_static instance_static zone watchdog report
 
 VARS=`eval echo '${@#'$COMMAND'}'`
 parseOpts $VARS
@@ -1805,7 +943,6 @@ if [ -z "$SHAREDPATH" ]; then
 	SHAREDPATH=/usr/local/acmshared
 fi
 mkdir -p $SHAREDPATH
-load.module farm csync
 BACKUPPATH=$SHAREDPATH/backup
 
 BACKUPLIMIT=`cfg.getValue backuplimit`
@@ -1814,6 +951,9 @@ if [ -z "$BACKUPLIMIT" ]; then
 	BACKUPLIMIT=7
 fi
 
+load.module farm csync
+
+#TODO: move to groups_static
 System.getGroups() {
 	GROUPS=""
 	if [ -d $DEFAULTGROUPPATH ]; then
@@ -2513,7 +1653,7 @@ case $COMMAND in
 	;;
 	#COMMAND:INFREQ
 	preparebsd)
-		load.module pkg
+		load.module conf pkg ipf pgsql
 		echo Prepareing BSD...
 		mail.aliases.check
 		System.fs.dir.create ${ACMBSDPATH}/.ssh
@@ -2544,12 +1684,14 @@ case $COMMAND in
 		echo -n 'Check for make.conf...'
 		if [ ! -e /etc/make.conf ]; then
 			out.status yellow 'NOT FOUND'
-			echo 'WITHOUT_X11=YES' > /etc/make.conf
+			echo 'BOOTWAIT=0' > /etc/make.conf
+			echo 'WITHOUT_X11=YES' >> /etc/make.conf
 			echo 'NO_PROFILE=YES' >> /etc/make.conf
 			echo 'WITH_CPUFLAGS=YES' >> /etc/make.conf
 			echo 'BUILD_OPTIMIZED=YES' >> /etc/make.conf
 			echo 'OPTIMZED_CFLAGS=YES' >> /etc/make.conf
 			echo 'WITH_OPTIMIZED_CFLAGS=YES' >> /etc/make.conf
+			echo 'WITH_STATIC=YES' >> /etc/make.conf
 			echo 'BUILD_STATIC=YES' >> /etc/make.conf
 			echo 'WITHOUT_CUPS=YES' >> /etc/make.conf
 			echo 'WITHOUT_DEBUG=YES' >> /etc/make.conf
@@ -2557,185 +1699,86 @@ case $COMMAND in
 			out.status green FOUND
 		fi
 
-		pkg.install.port bash shells/bash
-		pkg.install.port sudo security/sudo
-		pkg.install.port nano editors/nano
-		pkg.install.port curl ftp/curl
-		#pkg.install.port xauth x11/xauth
-		pkg.install.port rsync net/rsync
-		pkg.install.port rlwrap devel/rlwrap
-		pkg.install.port screen sysutils/screen
-		pkg.install.port elinks www/elinks
-		#pkg.install.port mrtg net-mgmt/mrtg
-		pkg.install.port portupgrade ports-mgmt/portupgrade
-		#pkg.install.port portcheck ports-mgmt/portcheck
-		pkg.install.port pkg_cleanup ports-mgmt/pkg_cleanup
-		pkg.install.port postgresql-server databases/postgresql91-server
-		#pkg.install.port p5-IO-Tty devel/p5-IO-Tty
-		#pkg.install.port p5-Authen-Libwrap security/p5-Authen-Libwrap
-		#pkg.install.port p5-DBI databases/p5-DBI
-		#pkg.install.port p5-DBD-Pg databases/p5-DBD-Pg
-		pkg.install.port xtail misc/xtail
-		#pkg.install.port mpd net/mpd5
-		pkg.install.port postfix mail/postfix
-		pkg.install.port metamail mail/metamail
-		pkg.install.port xmlstarlet textproc/xmlstarlet
-		#pkg.install.port lame audio/lame
-		pkg.install.port ncdu sysutils/ncdu
-		pkg.install.port tinc security/tinc
-		pkg.install.port mtr-nox11 net/mtr-nox11
-		pkg.install.port p5-ack textproc/p5-ack
-		pkg.install.port smartmontools sysutils/smartmontools
-		pkg.install.port cpuflags devel/cpuflags
-
-		# check these two ports
-		pkg.install.port host-setup sysutils/host-setup
-		pkg.install.port sysrc sysutils/sysrc
-
-		csync.makecert() {
-			echo '
-				PWDBAK=`pwd`
-				DIRNAME=`cat distinfo | grep SIZE | cut -d"(" -f2 | cut -d"." -f1-2`
-				cd $PWDBAK/work/$DIRNAME
-				make cert
-				cd $PWDBAK
-			'
-		}
-		pkg.install.port csync2 net/csync2 csync.makecert
-		chmod 4550 /usr/local/sbin/csync2
-		pkg.install.port gnutls security/gnutls
-
-		pkg.install.pkg openjdk openjdk7
-
 		base.file.checkLine /etc/rc.conf sshd_enable=\"YES\"
 		base.file.checkLine /etc/rc.conf fsck_y_enable=\"YES\"
 		base.file.checkLine /etc/rc.conf named_enable=\"YES\"
 		base.file.checkLine /etc/rc.conf ntpdate_enable=\"YES\"
 		base.file.checkLine /etc/rc.conf ntpdate_flags 'ntpdate_flags="-b pool.ntp.org europe.pool.ntp.org time.euro.apple.com"'
-		#Postfix
-		mail.aliases.refresh
 
-		System.fs.dir.create /etc/ipf/ > /dev/null 2>&1
-		ipf.conf() {
-			cat <<-EOF
-				# local interface
-				pass in  quick on lo0 all
-				pass out quick on lo0 all
+		conf.install profile.sh /etc/profile
+		conf.install inputrc /etc/inputrc
+		conf.install login.conf /etc/login.conf
+		cap_mkdb /etc/login.conf
 
-				# tap interface
-				pass in  quick on tap0 all
-				pass out quick on tap0 all
+		pkg.install.port portupgrade ports-mgmt/portupgrade
 
-				# local addrs
-				pass in  quick from 10.0.0.0/8 to any
-				pass out quick from 10.0.0.0/8 to 10.0.0.0/8
+		pkg.install.port bash shells/bash
 
-				pass in  quick from 192.168.0.0/16 to any
-				pass out quick from 192.168.0.0/16 to 192.168.0.0/16
+		pkg.install.port screen sysutils/screen
+		conf.install screenrc /usr/local/etc/screenrc
+		pkg.install.port sudo security/sudo
 
-				pass in  quick from 172.16.0.0/12 to any
-				pass out quick from 172.16.0.0/12 to 172.16.0.0/12
-			EOF
-			for IF in $@; do
-				cat <<-EOF
-					# block out multicast
-					block out quick on $IF from 224.0.0.0/3
-					# allow other out
-					pass out quick on $IF all keep state
-					# http
-					pass in  quick on $IF proto tcp from any to any port = 80 keep state
-					pass in  quick on $IF proto tcp from any to any port = 14080 keep state
-					# https
-					pass in  quick on $IF proto tcp from any to any port = 443 keep state
-					pass in  quick on $IF proto tcp from any to any port = 14443 keep state
-					# dns
-					pass in  quick on $IF proto tcp from any to any port = 53 keep state
-					pass in  quick on $IF proto udp from any to any port = 53 keep state
-					# ssh
-					pass in  quick on $IF proto tcp from any to any port = 22 keep state
-					# mosh
-					pass in  quick on $IF proto udp from any to any port = 60000 keep state
-					# acm.ssh
-					pass in  quick on $IF proto tcp from any to any port = 14022 keep state
-					# vpn
-					pass in  quick on $IF proto tcp from any to any port = 655 keep state
-					pass in  quick on $IF proto udp from any to any port = 655 keep state
-					pass in  quick on $IF proto tcp from any to any port = 14723 keep state
-					# csync2
-					pass in  quick on $IF proto tcp from any to any port = 30865 keep state
-					# cvs server
-					pass in  quick on $IF proto tcp from any to any port = 2401 keep state
-					# reject auth queries that remote mail relays mat send
-					block return-rst in on $IF quick proto tcp from any to any port = 113
-					EOF
-			done
-			cat <<- EOF
-				# allow ping from outside
-				pass in quick proto icmp from any to any icmp-type 8 code 0 keep state
-				# allow ping from inside
-				pass out quick proto icmp from any to any icmp-type 8 code 0 keep state
-				# block others
-				block in quick from any to any
-				block out quick from any to any
-			EOF
-		}
-		#TODO: option to select trusted interfaces other than lo0
-		IF_TRUSTED='lo0 tap0'
-		IF_FIREWALLED=`/sbin/ifconfig -lu | sed 's/lo0 //g' | sed 's/ lo0//g' | sed 's/tap0 //g' | sed 's/ tap0//g'`
-		out.info "Trusted interfaces: $IF_TRUSTED"
-		out.info "Firewalled interfaces: $IF_FIREWALLED"
-		ipf.conf "$IF_FIREWALLED" > /etc/ipf/ipf.conf
-		#OLD: base.file.checkLine /etc/ipf/ipf.conf "pass in all"
-		#OLD: base.file.checkLine /etc/ipf/ipf.conf "pass out all"
-		if [ ! -f /etc/ipf/ipnat.conf ]; then
-			touch /etc/ipf/ipnat.conf
-		fi
-		#OLD: base.file.checkLine /etc/ipfw.rules "add 00100 allow tcp from any to any 22,53,80,443,2401,10000 in"
+		conf.install sudoers /usr/local/etc/sudoers
+		chown root:wheel /usr/local/etc/sudoers
+		chmod 0440 /usr/local/etc/sudoers
 
-		base.file.checkLine /etc/rc.conf ipfilter_enable=\"YES\"
-		base.file.checkLine /etc/rc.conf ipnat_enable=\"YES\"
-		base.file.checkLine /etc/rc.conf ipmon_enable=\"YES\"
-		base.file.checkLine /etc/rc.conf ipfs_enable=\"YES\"
-		base.file.checkLine /etc/rc.conf ipfilter_rules=\"/etc/ipf/ipf.conf\"
-		base.file.checkLine /etc/rc.conf ipnat_rules=\"/etc/ipf/ipnat.conf\"
+		pkg.install.port nano editors/nano
+		conf.install nanorc /usr/local/etc/nanorc
 
-		base.file.checkLine /etc/rc.conf sendmail_enable=\"NO\"
-		base.file.checkLine /etc/rc.conf sendmail_submit_enable=\"NO\"
-		base.file.checkLine /etc/rc.conf sendmail_outbound_enable=\"NO\"
-		base.file.checkLine /etc/rc.conf sendmail_msp_queue_enable=\"NO\"
-		base.file.checkLine /etc/rc.conf postfix_enable=\"YES\"
+		pkg.install.port postfix mail/postfix
+		mail.check
+		pkg.install.port metamail mail/metamail
 
-		IPFSTATUS=`/etc/rc.d/ipfilter status | grep Running | cut -d: -f2 | tr -d ' '`
-		if [ "$IPFSTATUS" = yes ]; then
-			/etc/rc.d/ipfilter reload
-			/etc/rc.d/ipnat reload
+		pgsql.check
+		csync.check
+
+		pkg.install.port curl ftp/curl
+		#pkg.install.port xauth x11/xauth
+		pkg.install.port rsync net/rsync
+		pkg.install.port rlwrap devel/rlwrap
+		pkg.install.port elinks www/elinks
+		#pkg.install.port mrtg net-mgmt/mrtg
+
+		#pkg.install.port portcheck ports-mgmt/portcheck
+		pkg.install.port portaudit ports-mgmt/portaudit
+
+		out.message "Check for portcheck..." waitstatus
+		if [ -f /usr/local/bin/portcheck ]; then
+			out.status green FOUND
 		else
-			/etc/rc.d/ipfilter start
-			/etc/rc.d/ipnat start
+			out.status yellow 'NOT FOUND'
+			out.message "Installing portcheck..."
+			cp $ACMBSDPATH/scripts/lib/portcheck /usr/local/bin/
+			chmod +x /usr/local/bin/portcheck
+			out.message "Check for portcheck..." waitstatus
+			if [ -f /usr/local/bin/portcheck ]; then
+				out.status green FOUND
+			else
+				out.status red ERROR
+			fi
 		fi
-		/usr/local/etc/rc.d/postfix stop
-		/usr/local/etc/rc.d/postfix start
-		base.file.checkLine /boot/loader.conf kern.ipc.semmni kern.ipc.semmni=256
-		base.file.checkLine /boot/loader.conf kern.ipc.semmns kern.ipc.semmns=512
-		base.file.checkLine /boot/loader.conf kern.ipc.semmnu kern.ipc.semmnu=256
 
-		base.file.checkLine /etc/sysctl.conf kern.ipc.shmall kern.ipc.shmall=32768
-		base.file.checkLine /etc/sysctl.conf kern.ipc.shmmax kern.ipc.shmmax=134217728
-		base.file.checkLine /etc/sysctl.conf kern.ipc.semmap kern.ipc.semmap=256
-		base.file.checkLine /etc/sysctl.conf kern.ipc.shm_use_phys kern.ipc.shm_use_phys=1
+		pkg.install.port pkg_cleanup ports-mgmt/pkg_cleanup
+		pkg.install.port xtail misc/xtail
+		pkg.install.port xmlstarlet textproc/xmlstarlet
+		pkg.install.port ncdu sysutils/ncdu
+		pkg.install.port tinc security/tinc
+		pkg.install.port mtr-nox11 net/mtr-nox11
+		pkg.install.port ack textproc/ack
+		pkg.install.port smartmontools sysutils/smartmontools
+		pkg.install.port cpuflags devel/cpuflags
+		pkg.install.port ipcalc net-mgmt/ipcalc
 
-		cfg.profile > /etc/profile
-		cfg.nanorc > /usr/local/etc/nanorc
-		cfg.screenrc > /usr/local/etc/screenrc
-		cfg.inputrc > /etc/inputrc
-		cfg.login.conf > /etc/login.conf && cap_mkdb /etc/login.conf
-		cfg.sudoers > /usr/local/etc/sudoers && chown root:wheel /usr/local/etc/sudoers && chmod 0440 /usr/local/etc/sudoers
+		#TODO: there is no use for them yet, check these ports
+		pkg.install.port host-setup sysutils/host-setup
+		pkg.install.port sysrc sysutils/sysrc
 
-		chown -R pgsql:pgsql /usr/local/share/postgresql
-		chown -R pgsql:pgsql /usr/local/lib/postgresql
+		pkg.install.pkg openjdk openjdk7
+
+		ipf.check
 
 		out.info "Fresh system? Reboot your OS!"
-		 echo
+		echo
 	;;
 	#COMMAND:INFREQ
 	updatebsd)
@@ -2944,6 +1987,7 @@ case $COMMAND in
 				System.fs.dir.create $GROUPPATH/protected/web/$DOMAIN
 				echo -n "Sync domain files with '$ITEM' group..."
 				rsync -qa --delete $BACKUPTMPPATH/$ITEM/ $GROUPPATH/protected/web/$DOMAIN
+				System.changeRights $GROUPPATH/protected/web/$DOMAIN $GROUPNAME ${GROUPNAME}1
 				out.status green DONE
 			done
 			if Console.isOptionExist db; then
@@ -3438,10 +2482,19 @@ case $COMMAND in
 			sync)
 				csync.sync
 			;;
-			localremovecert)
+			forget)
 				HOST=`getSettingValue host`
 				test -z "$HOST" && Syntax.cluster && exit 1
-				sqlite /var/db/csync2/$HOSTNAME.db "delete from x509_cert where peername = '$HOST';"
+				cluster_forget_query() {
+					cat <<-EOF
+						SELECT a.* FROM dirty AS a WHERE peername='$HOST';
+						DELETE FROM dirty WHERE peername='$HOST';
+						SELECT a.* FROM x509_cert AS a WHERE peername='$HOST';
+						DELETE FROM x509_cert WHERE peername='$HOST';
+					EOF
+				}
+				# echo "`cluster_forget_query`"
+				sqlite /var/db/csync2/$HOSTNAME.db "`cluster_forget_query`"
 			;;
 			localadd)
 				HOST=`getSettingValue host`

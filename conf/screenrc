@@ -1,0 +1,20 @@
+# Make the bell visible instead of audible
+#vbell on
+#vbell_msg "Ding"
+#vbellwait 0
+
+# Set default encoding to UTF-8
+encoding UTF-8
+defencoding UTF-8
+defutf8 on
+
+# Other
+altscreen on
+msgminwait 0
+ignorecase on
+defscrollback 10000
+startup_message off
+termcapinfo xterm-256color|xterm-color|xterm|xterms|xs|rxvt ti@:te@
+caption string "%?%F%{= Bk}%? %C%A %D %d-%m-%Y %{= kB} %t%= %?%F%{= Bk}%:%{= wk}%? %n "
+hardstatus alwayslastline
+hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B} %d/%m %{W}%c %{g}]'

@@ -10,7 +10,7 @@ pkg.install.port() {
 	else
 		out.status yellow 'NOT FOUND'
 		out.message "Installing $1..."
-		if !test -d /usr/ports && test -d /usr/ports/$2; then
+		if ! test -d /usr/ports && test -d /usr/ports/$2; then
 			out.error "ports tree or specified port couldn't be found"
 			exit 1
 		fi
