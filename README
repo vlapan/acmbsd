@@ -33,17 +33,6 @@ acmbsd update live
 
 1.5 Configure system and group
 
-Edit sudoers with 'visudo' command
-
-Add following lines:
-
-Defaults    editor=/usr/local/bin/nano
-Defaults    !env_reset
-
-And uncomment this line:
-
-%wheel  ALL=(ALL) ALL
-
 To see config command syntax and available group list execute this command:
 acmbsd config
 
