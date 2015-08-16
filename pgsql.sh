@@ -10,11 +10,7 @@ pgsql.check() {
 	base.file.checkLine /etc/sysctl.conf kern.ipc.semmap kern.ipc.semmap=256
 	base.file.checkLine /etc/sysctl.conf kern.ipc.shm_use_phys kern.ipc.shm_use_phys=1
 
-	pkg.install.port postgresql*-server databases/postgresql93-server
-	#pkg.install.port p5-IO-Tty devel/p5-IO-Tty
-	#pkg.install.port p5-Authen-Libwrap security/p5-Authen-Libwrap
-	#pkg.install.port p5-DBI databases/p5-DBI
-	#pkg.install.port p5-DBD-Pg databases/p5-DBD-Pg
+	pkg.install postgresql*-server databases/postgresql94-server
 
 	chown -R pgsql:pgsql /usr/local/share/postgresql
 	chown -R pgsql:pgsql /usr/local/lib/postgresql

@@ -73,44 +73,6 @@ Java.classpath.stats(){
 		\t	modules: `echo $MODULESDIR | tr ':' '\n' | wc -l | tr -d ' '`
 	EOF
 }
-Ports.toUpdateList() {
-	pkg_version -vIL= | fgrep -v diablo-j | fgrep -v postgresql
-}
-Ports.update() {
-	local PORTSNAP=/usr/sbin/portsnap
-	echo -n Reciving and updateing ports tree...
-	[ -z "$AUTO" ] && $PORTSNAP fetch > $PORTSUPDLOGFILE 2>&1 || $PORTSNAP cron > $PORTSUPDLOGFILE 2>&1
-	$PORTSNAP update >> $PORTSUPDLOGFILE 2>&1
-	out.status green DONE
-	echo -n Check for new ports versions...
-	NEW=`Ports.toUpdateList`
-	[ -z "$NEW" ] && out.status green 'NO UPDATES' && return 0
-	out.status green FOUND
-	printf "\n$NEW\n\n" >> $PORTSUPDLOGFILE
-	echo -n Updating ports...
-	/usr/local/sbin/portupgrade -aRry --batch -x postgresql* >> $PORTSUPDLOGFILE 2> /dev/null
-	out.status green DONE
-	NEW=`Ports.toUpdateList`
-	printf "\n\n$NEW\n" >> $PORTSUPDLOGFILE
-	mail.send "`cat $PORTSUPDLOGFILE`" 'ports updated' plain
-}
-System.update() {
-	local BSDUPDATE=/usr/sbin/freebsd-update
-	echo -n Reciving updates for your system version...
-	[ -z "$AUTO" ] && $BSDUPDATE fetch > $OSUPDLOGFILE 2>&1 || $BSDUPDATE cron > $OSUPDLOGFILE 2>&1
-	if $BSDUPDATE install >> $OSUPDLOGFILE 2>&1; then
-		out.status green INSTALLED
-		out.info 'restart your system!'
-		mail.send "`cat $OSUPDLOGFILE`" 'freebsd updates awaiting os restart' plain
-	else
-		out.status green 'NO UPDATES'
-	fi
-}
-System.updateAll() {
-	[ -n "$1" ] && AUTO=$1
-	Ports.update
-	System.update
-}
 
 #TODO: H2
 Database.h2.backupAll() {
@@ -1672,34 +1634,7 @@ case $COMMAND in
 		##
 		sys.grp.chk $SCRIPTNAME
 		sys.usr.chk $SCRIPTNAME && sys.usr.setHome $SCRIPTNAME $ACMBSDPATH
-		echo -n 'Check for ports...'
-		if [ -d /usr/ports -a -e /usr/ports/Makefile ] ; then
-			out.status green FOUND
-		else
-			out.status yellow 'NOT FOUND'
-			echo 'Getting ports tree...'
-			portsnap fetch
-			portsnap extract
-			portsnap update
-		fi
 
-		echo -n 'Check for make.conf...'
-		if [ ! -e /etc/make.conf ]; then
-			out.status yellow 'NOT FOUND'
-			echo 'BOOTWAIT=0' > /etc/make.conf
-			echo 'WITHOUT_X11=YES' >> /etc/make.conf
-			echo 'NO_PROFILE=YES' >> /etc/make.conf
-			echo 'WITH_CPUFLAGS=YES' >> /etc/make.conf
-			echo 'BUILD_OPTIMIZED=YES' >> /etc/make.conf
-			echo 'OPTIMZED_CFLAGS=YES' >> /etc/make.conf
-			echo 'WITH_OPTIMIZED_CFLAGS=YES' >> /etc/make.conf
-			echo 'WITH_STATIC=YES' >> /etc/make.conf
-			echo 'BUILD_STATIC=YES' >> /etc/make.conf
-			echo 'WITHOUT_CUPS=YES' >> /etc/make.conf
-			echo 'WITHOUT_DEBUG=YES' >> /etc/make.conf
-		else
-			out.status green FOUND
-		fi
 
 		base.file.checkLine /etc/rc.conf sshd_enable=\"YES\"
 		base.file.checkLine /etc/rc.conf fsck_y_enable=\"YES\"
@@ -1712,83 +1647,46 @@ case $COMMAND in
 		conf.install login.conf /etc/login.conf
 		cap_mkdb /etc/login.conf
 
-		pkg.install.port portupgrade ports-mgmt/portupgrade
-
-		pkg.install.port bash shells/bash
-
-		pkg.install.port screen sysutils/screen
+		pkg.install bash shells/bash
+		pkg.install screen sysutils/screen
 		conf.install screenrc /usr/local/etc/screenrc
-		pkg.install.port sudo security/sudo
+		pkg.install sudo security/sudo
 
-		conf.install sudoers /usr/local/etc/sudoers
-		chown root:wheel /usr/local/etc/sudoers
-		chmod 0440 /usr/local/etc/sudoers
-
-		pkg.install.port nano editors/nano
+		pkg.install nano editors/nano
 		conf.install nanorc /usr/local/etc/nanorc
 
-		pkg.install.port postfix mail/postfix
+		pkg.install postfix mail/postfix
 		mail.check
-		pkg.install.port metamail mail/metamail
+		pkg.install metamail mail/metamail
 
 		pgsql.check
 		csync.check
 
-		pkg.install.port curl ftp/curl
-		#pkg.install.port xauth x11/xauth
-		pkg.install.port rsync net/rsync
-		pkg.install.port rlwrap devel/rlwrap
-		pkg.install.port elinks www/elinks
-		#pkg.install.port mrtg net-mgmt/mrtg
+		pkg.install curl ftp/curl
+		pkg.install rsync net/rsync
+		pkg.install rlwrap devel/rlwrap
+		pkg.install elinks www/elinks
 
-		#pkg.install.port portcheck ports-mgmt/portcheck
-		pkg.install.port portaudit ports-mgmt/portaudit
-
-		out.message "Check for portcheck..." waitstatus
-		if [ -f /usr/local/bin/portcheck ]; then
-			out.status green FOUND
-		else
-			out.status yellow 'NOT FOUND'
-			out.message "Installing portcheck..."
-			cp $ACMBSDPATH/scripts/lib/portcheck /usr/local/bin/
-			chmod +x /usr/local/bin/portcheck
-			out.message "Check for portcheck..." waitstatus
-			if [ -f /usr/local/bin/portcheck ]; then
-				out.status green FOUND
-			else
-				out.status red ERROR
-			fi
-		fi
-
-		pkg.install.port pkg_cleanup ports-mgmt/pkg_cleanup
-		pkg.install.port xtail misc/xtail
-		pkg.install.port xmlstarlet textproc/xmlstarlet
-		pkg.install.port ncdu sysutils/ncdu
-		pkg.install.port tinc security/tinc
-		pkg.install.port mtr-nox11 net/mtr-nox11
-		pkg.install.port ack textproc/ack
-		pkg.install.port smartmontools sysutils/smartmontools
-		pkg.install.port cpuflags devel/cpuflags
-		pkg.install.port ipcalc net-mgmt/ipcalc
-		pkg.install.port trafshow net/trafshow
+		pkg.install xtail misc/xtail
+		pkg.install xmlstarlet textproc/xmlstarlet
+		pkg.install ncdu sysutils/ncdu
+		pkg.install tinc security/tinc
+		pkg.install mtr-nox11 net/mtr-nox11
+		pkg.install ack textproc/ack
+		pkg.install smartmontools sysutils/smartmontools
+		pkg.install cpuflags devel/cpuflags
+		pkg.install ipcalc net-mgmt/ipcalc
+		pkg.install trafshow net/trafshow
 
 		#TODO: there is no use for them yet, check these ports
-		pkg.install.port host-setup sysutils/host-setup
-		pkg.install.port sysrc sysutils/sysrc
+		pkg.install host-setup sysutils/host-setup
+		pkg.install sysrc sysutils/sysrc
 
-		pkg.install.pkg openjdk openjdk7
+		pkg.install openjdk openjdk8
 
 		ipf.check
 
 		out.info "Fresh system? Reboot your OS!"
-		echo
-	;;
-	#COMMAND:INFREQ
-	updatebsd)
-		if ! echo $OPTIONS | fgrep -w notips > /dev/null 2>&1 ; then
-			out.info "if you want to upgrade your system to next version then use 'freebsd-update -r 9.X-RELEASE upgrade'"
-		fi
-		System.updateAll
 		echo
 	;;
 	#COMMAND:SYSTEM
@@ -1802,8 +1700,6 @@ case $COMMAND in
 		#${0} autoupdate
 		mail.send "$(top -bItaSC)" "top status" "plain"
 		${0} restart all > /tmp/acmbsd.restart.tmp 2> /tmp/acmbsd.restart.tmp
-		#TODO: do update somehow else
-		#System.updateAll autotime
 		${0} autoreport
 		if [ -f /tmp/acmbsd.service.log ]; then
 			mail.send "$(cat /tmp/acmbsd.service.log)" "service log" "plain"
