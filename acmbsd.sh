@@ -178,7 +178,7 @@ Network.getInterfaceByIP() {
 	return 1
 }
 Network.cvs.fetch() {
-	cvs -d :pserver:guest:guest@cvs.myx.ru:$1 -fq -z 6 checkout -P -d $2 $3 && return 0 || return 1
+	cvs -d :pserver:guest:guest@cvs.myx.ru:$1 -fq -z 6 checkout -P -d $2 $3 || return 1
 }
 IPOCT='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 LASTIPOCT='(25[0-4]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
@@ -749,17 +749,19 @@ System.checkPermisson() {
 	echo $GROUPSNAME | fgrep -qw `echo $USER | tr -d '[0-9]'` && return 0 || return 1
 }
 System.fileWriteAccess() {
-	[ -w $1 ] && return 0 || return 1
+	[ -w $1 ] || return 1
 }
 System.isRoot() {
-	[ `whoami` = root ] && return 0 || return 1
+	[ `whoami` = root ] || return 1
 }
 System.isSystemGroup() {
 	echo `groups` | fgrep -qw acmbsd && return 0 || return 1
 }
 System.runAsUser() {
-	echo "Enter the password of '$1' user if prompted..."
-	su - $1 -c "$2"
+	# echo "Enter the password of '$1' user if prompted..."
+	# su - $1 -c "$2"
+	[ `whoami` != $1 ] && echo "Must be run under '$1' user!" && return 1
+	$2
 }
 System.vars.groups() {
 	echo "devel test live"
@@ -1156,7 +1158,7 @@ case $COMMAND in
 				System.fs.dir.create $GEOSHAREDPATH
 				fetch -v -a -m -o $GEOSHAREDPATH ftp://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-latest
 				fetch -v -a -m -o $GEOSHAREDPATH ftp://ftp.apnic.net/pub/stats/apnic/delegated-apnic-latest
-				fetch -v -a -m -o $GEOSHAREDPATH ftp://ftp.arin.net/pub/stats/arin/delegated-arin-latest
+				fetch -v -a -m -o $GEOSHAREDPATH/delegated-arin-latest ftp://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest
 				fetch -v -a -m -o $GEOSHAREDPATH ftp://ftp.apnic.net/pub/stats/iana/delegated-iana-latest
 				fetch -v -a -m -o $GEOSHAREDPATH ftp://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-latest
 				fetch -v -a -m -o $GEOSHAREDPATH ftp://ftp.ripe.net/ripe/stats/delegated-ripencc-latest
@@ -1768,6 +1770,7 @@ case $COMMAND in
 		pkg.install.port smartmontools sysutils/smartmontools
 		pkg.install.port cpuflags devel/cpuflags
 		pkg.install.port ipcalc net-mgmt/ipcalc
+		pkg.install.port trafshow net/trafshow
 
 		#TODO: there is no use for them yet, check these ports
 		pkg.install.port host-setup sysutils/host-setup
@@ -2405,6 +2408,14 @@ case $COMMAND in
 		else
 			Syntax.telnet && exit 1
 		fi
+	;;
+	#COMMAND:DEVEL
+	vacuum)
+		DBLIST="`psql -tA -F' ' -U pgsql template1 -c 'SELECT datname FROM pg_database WHERE datistemplate = false;'`"
+		for ITEM in $DBLIST; do
+			echo "$ITEM..."
+			echo 'VACUUM ANALYSE;' | psql -U pgsql "$ITEM"
+		done
 	;;
 	#COMMAND:DEVEL
 	tools)

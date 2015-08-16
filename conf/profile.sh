@@ -4,7 +4,7 @@ export VISUAL=nano
 export HISTSIZE=5000
 export HISTFILESIZE=20000
 export HISTCONTROL=erasedups
-export PROMPT_COMMAND='history -a; cp \$HISTFILE /tmp/hist_\$USER; awk -f $ACMBSDPATH/scripts/awk/reverse.awk /tmp/hist_\$USER | awk -f $ACMBSDPATH/scripts/awk/uniq.awk | awk -f $ACMBSDPATH/scripts/awk/reverse.awk > \$HISTFILE; rm /tmp/hist_\$USER; history -c; history -r;'
+export PROMPT_COMMAND="history -a; cp \$HISTFILE /tmp/hist_\$USER; awk -f $ACMBSDPATH/scripts/awk/reverse.awk /tmp/hist_\$USER | awk -f $ACMBSDPATH/scripts/awk/uniq.awk | awk -f $ACMBSDPATH/scripts/awk/reverse.awk > \$HISTFILE; rm /tmp/hist_\$USER; history -c; history -r;"
 # ignore some common commands when searching history
 export HISTIGNORE="dir:la:exit:jobs"
 export CLICOLOR=YES

@@ -69,7 +69,7 @@ Named.zonefile.gmail() {
 		@		2419200	MX	30	ASPMX3.GOOGLEMAIL.COM.
 		@		2419200	MX	30	ASPMX4.GOOGLEMAIL.COM.
 		@		2419200	MX	30	ASPMX5.GOOGLEMAIL.COM.
-		mail	2419200	CNAME	ghs.google.com.
+		mail	2419200	CNAME	ghs.googlehosted.com.
 	EOF
 }
 
