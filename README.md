@@ -12,7 +12,7 @@ cvs -d :pserver:guest:guest@cvs.myx.ru:/var/ae3 -fq -z 6 checkout -d acmbsd acm-
 
 *Method 2. GIT
 Requirements: FreeBSD, Port Tree
-cd /usr/ports/devel/git && make install clean
+pkg install -y git
 git clone git://github.com/vlapan/acmbsd.git
 
 1.2 Prepare system
