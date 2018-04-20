@@ -205,7 +205,7 @@ THIS.getSettings() {
 	printf "\t-publicip=`THIS.getPublicIP` - IP-address for DNS, default is the same with 'extip'\n"
 	printf "\t-memory=`THIS.getMemory` - memory for each one instance in group\n"
 	printf "\t-optimize=`THIS.getOptimizeMode` - optimize mode, can be 'default', 'speed' or 'size' \n"
-	printf "\t-branch=`THIS.getBranch` - branch of acm.cm5, value can be 'stable', 'release' or 'current'\n"
+	printf "\t-branch=`THIS.getBranch` - branch of acm.cm5, value can be 'release' or 'current'\n"
 	printf "\t-type=`THIS.getGroupType` - type of group, can be 'standard', 'minimal', 'extended' or 'parallel'\n"
 	printf "\t-instances=`THIS.getInstanceCount` - instances count in group, can be changed if type 'extended', default '2'\n"
 	printf "\t-loglevel=`THIS.getLogLevel` - can be 'NORMAL', 'MINIMAL', 'DEBUG' or 'DEVEL'\n"

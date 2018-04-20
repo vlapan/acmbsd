@@ -32,7 +32,9 @@ Watchdog.restart() {
 			out.status green FOUND
 			out.message 'Killing watchdog process...' waitstatus
 			kill `cat $WATCHDOGFLAG`
-			rm $WATCHDOGFLAG
+			if [ -e "$WATCHDOGFLAG" ]; then
+				rm $WATCHDOGFLAG
+			fi
 			out.status green DONE
 			Watchdog.start
 		fi

@@ -3,6 +3,8 @@
 #IMPORT
 load.module cfg out
 
+NAMEDCONFFILE=/usr/local/etc/namedb/named.conf
+
 #TODO: transfer zones from $GROUPPATH/protected/export/dns to $SHARED/dns
 Named.transform(){
 	local FILE=$1
@@ -76,13 +78,14 @@ Named.zonefile.gmail() {
 Named.conf.options() {
 	cat <<-EOF
 		options {
-			directory "/etc/namedb";
+			directory "/usr/local/etc/namedb";
 			version "[Secured]";
 			pid-file "/var/run/named/pid";
 			allow-transfer {$NAMEDTRANSFER};
 			multi-master yes;
 			dump-file "/var/dump/named_dump.db";
 			statistics-file "/var/stats/named.stats";
+			recursion no;
 			listen-on {any;};
 		};
 		controls {
@@ -103,7 +106,7 @@ Named.conf.zone() {
 }
 
 Named.reload() {
-	ZONEDIR=/etc/namedb/master/$GROUPNAME
+	ZONEDIR=/usr/local/etc/namedb/master/$GROUPNAME
 	echo "ZONEDIR:$ZONEDIR,GROUPZONEDIR:$GROUPZONEDIR"
 	System.fs.dir.create $ZONEDIR
 	System.fs.dir.create $GROUPZONEDIR
@@ -123,7 +126,7 @@ Named.reload() {
 		#TODO: transfers auto lookup
 		NAMEDTRANSFER=`cfg.getValue namedtransfer` && NAMEDTRANSFER="`echo $NAMEDTRANSFER | sed 's/,/;/g'`;" || NAMEDTRANSFER='"none";'
 		#TODO:echo '82.179.192.192;82.179.193.193'
-		#NAMEDCONF="options {directory \"/etc/namedb\";version \"[Secured]\";pid-file \"/var/run/named/pid\";allow-transfer {$NAMEDTRANSFER};multi-master yes;dump-file \"/var/dump/named_dump.db\";statistics-file \"/var/stats/named.stats\";listen-on {any;};}; controls {inet 127.0.0.1 allow {localhost;};}; //acm generatedoptions\n"
+		#NAMEDCONF="options {directory \"/usr/local/etc/namedb\";version \"[Secured]\";pid-file \"/var/run/named/pid\";allow-transfer {$NAMEDTRANSFER};multi-master yes;dump-file \"/var/dump/named_dump.db\";statistics-file \"/var/stats/named.stats\";listen-on {any;};}; controls {inet 127.0.0.1 allow {localhost;};}; //acm generatedoptions\n"
 		NAMEDCONF="`Named.conf.options | tr -d '\n' | tr -d '\t'` //acm generatedoptions\n"
 	fi
 	rm -f $ZONEDIR/*
@@ -136,16 +139,16 @@ Named.reload() {
 		NAMEDCONF="${NAMEDCONF}zone \"$ZONE\" {type master;file \"$ZONEDIR/$ITEM\";}; //acm group=$GROUPNAME\n"
 	done
 	#TODO: use 'mktemp'
-	sed -i '' "/group=$GROUPNAME/d;/generatedoptions/d" /etc/namedb/named.conf
-	chown -R root:wheel /etc/namedb/ && chmod -R 0755 /etc/namedb/
-	chown -R root:wheel /etc/namedb/master && chmod -R 0755 /etc/namedb/master
-	chown -R bind:wheel /etc/namedb/slave && chmod -R 0755 /etc/namedb/slave
-	chown -R bind:wheel /etc/namedb/dynamic && chmod -R 0755 /etc/namedb/dynamic
-	chown -R bind:wheel /etc/namedb/working && chmod -R 0755 /etc/namedb/working
+	sed -i '' "/group=$GROUPNAME/d;/generatedoptions/d" /usr/local/etc/namedb/named.conf
+	chown -R root:wheel /usr/local/etc/namedb/ && chmod -R 0755 /usr/local/etc/namedb/
+	chown -R root:wheel /usr/local/etc/namedb/master && chmod -R 0755 /usr/local/etc/namedb/master
+	chown -R bind:wheel /usr/local/etc/namedb/slave && chmod -R 0755 /usr/local/etc/namedb/slave
+	chown -R bind:wheel /usr/local/etc/namedb/dynamic && chmod -R 0755 /usr/local/etc/namedb/dynamic
+	chown -R bind:wheel /usr/local/etc/namedb/working && chmod -R 0755 /usr/local/etc/namedb/working
 	printf "$NAMEDCONF" >> $NAMEDCONFFILE
 	echo
-	if ! /etc/rc.d/named reload; then
-		/etc/rc.d/named restart
+	if ! /usr/local/etc/rc.d/named reload; then
+		/usr/local/etc/rc.d/named restart
 	fi
 }
 

@@ -43,17 +43,15 @@ csync.crontab() {
 
 csync.makecert() {
 	cat <<-EOF
-		PWDBAK=\`pwd\`
-		DIRNAME=\`cat distinfo | grep SIZE | cut -d"(" -f2 | cut -d"." -f1-2\`
-		cd $PWDBAK/work/$DIRNAME
-		make cert
-		cd $PWDBAK
+		openssl genrsa -out /usr/local/etc/csync2_ssl_key.pem 1024
+		openssl req -new -key /usr/local/etc/csync2_ssl_key.pem -out /usr/local/etc/csync2_ssl_cert.csr
+		openssl x509 -req -days 600 -in /usr/local/etc/csync2_ssl_cert.csr -signkey /usr/local/etc/csync2_ssl_key.pem -out /usr/local/etc/csync2_ssl_cert.pem
 	EOF
 }
 
 csync.check() {
-	pkg.install.port gnutls security/gnutls
-	pkg.install.port csync2 net/csync2 csync.makecert
+	pkg.install gnutls security/gnutls
+	pkg.install csync2 net/csync2 csync.makecert
 	chmod 4550 /usr/local/sbin/csync2
 }
 

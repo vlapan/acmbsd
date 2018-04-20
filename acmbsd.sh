@@ -90,7 +90,7 @@ Database.h2.restore() {
 	java -cp $PUBLIC/axiom/h2-*.jar org.h2.tools.RunScript -url jdbc:h2:$DBDIR/$ITEM -user sa -script $BACKUPDIR/$ITEM/$ITEM.zip -options compression zip;
 }
 Database.check() {
-	echo '\q' | psql $1 pgsql > /dev/null 2>&1 && return 0 || return 1
+	echo '\q' | /usr/local/bin/psql $1 pgsql > /dev/null 2>&1 && return 0 || return 1
 }
 Database.create() {
 	if ! Database.check $1 ; then
@@ -104,12 +104,12 @@ Database.create() {
 	fi
 }
 Database.getSize() {
-	psql -tA -c "select pg_size_pretty(pg_database_size('$1'))" postgres pgsql | tr -d ' ' | tr -d 'B' | tr 'k' 'K'
+	/usr/local/bin/psql -tA -c "select pg_size_pretty(pg_database_size('$1'))" postgres pgsql | tr -d ' ' | tr -d 'B' | tr 'k' 'K'
 }
 Database.counter.set() {
 	TABLE=`echo $2 | cut -d_ -f1`
 	FIELD=`echo $2 | cut -d_ -f2`
-	psql -tA -c "select setval('${2}_seq', (select max($FIELD) from $TABLE))" $1 pgsql
+	/usr/local/bin/psql -tA -c "select setval('${2}_seq', (select max($FIELD) from $TABLE))" $1 pgsql
 }
 Database.counters.correct() {
 	COUNTERS="d1dictionary_code d1folders_fldluid d1queue_queluid d1sources_srcluid m1inbox_msgluid m1queue_msgluid m1sent_msgluid s3tree_lnkluid s3dictionary_code"
@@ -140,6 +140,7 @@ Network.getInterfaceByIP() {
 	return 1
 }
 Network.cvs.fetch() {
+	echo cvs -d :pserver:guest:guest@cvs.myx.ru:$1 -fq -z 6 checkout -P -d $2 $3
 	cvs -d :pserver:guest:guest@cvs.myx.ru:$1 -fq -z 6 checkout -P -d $2 $3 || return 1
 }
 IPOCT='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
@@ -260,7 +261,7 @@ cvsacmcm() {
 	System.fs.dir.create $ACMCM5PATH > /dev/null 2>&1
 	cd $ACMCM5PATH
 	out.message "Fetching ACM.CM5 (sys-$1) version..." waitstatus
-	if Network.cvs.fetch /var/share tmp export/sys-$1/version/version > /dev/null 2>&1 ; then
+	if Network.cvs.fetch /var/share tmp export/sys-$1/version/version ; then
 		out.status green DONE
 	else
 		out.status red FAILED
@@ -513,19 +514,19 @@ dbuserscheck() {
 	for ITEM in $SERVERSDATA; do
 		ID=`echo $ITEM | cut -d'|' -f1`
 		PASSWORD=`echo $ITEM | cut -d'|' -f2`
-		[ -z "$(psql -tAc "\\du \"$ID\"" postgres pgsql)" ] && echo "CREATE USER \"$ID\";" | psql postgres pgsql -q
+		[ -z "$(/usr/local/bin/psql -tAc "\\du \"$ID\"" postgres pgsql)" ] && echo "CREATE USER \"$ID\";" | /usr/local/bin/psql postgres pgsql -q
 		{
 			echo 'BEGIN;'
-			if [ -z "$(psql -tAc "\\du access" "$ID" pgsql)" ]; then echo "CREATE GROUP access;"; fi
+			if [ -z "$(/usr/local/bin/psql -tAc "\\du access" "$ID" pgsql)" ]; then echo "CREATE GROUP access;"; fi
 			cat <<-EOF
 				ALTER USER "$ID" ENCRYPTED PASSWORD '${PASSWORD}';
 				GRANT access TO "$ID";
 				GRANT ALL ON DATABASE "$ID" TO access;
 				GRANT ALL ON SCHEMA public TO access;
 			EOF
-			psql "$ID" pgsql -F\  -Atc '\d' | while read schema table dummy; do echo "GRANT ALL ON TABLE \"$schema\".\"$table\" TO access;"; done
+			/usr/local/bin/psql "$ID" pgsql -F\  -Atc '\d' | while read schema table dummy; do echo "GRANT ALL ON TABLE \"$schema\".\"$table\" TO access;"; done
 			echo 'COMMIT;'
-		} | psql "$ID" pgsql -q
+		} | /usr/local/bin/psql "$ID" pgsql -q
 		out.info "'$ID' db user created!"
 	done
 }
@@ -535,7 +536,7 @@ domainrebuilder() {
 	DOMAINSDATA=$(cat ${SERVERSCONF} | fgrep -w server)
 	if echo "${DOMAINSDATA}" | fgrep -v " />" | fgrep -v " -->" > /dev/null 2>&1 ; then
 		out.error "broken servers.xml in '${GROUPNAME}' group"
-		continue
+		return
 	fi
 	DOMAINDATA=$(echo "${DOMAINSDATA}" | fgrep -w "${ID}'")
 	echo -n "Check for '${ID}' in servers.xml of '${GROUPNAME}' group..."
@@ -591,19 +592,19 @@ domainrebuilder() {
 				if [ "${KEY}" = user ] && [ "${VALUE}" != "${ID}" -o "`echo ${OPTIONS} | fgrep -w force`" ]; then
 					VALUE=${ID}
 					PASSWORD=$(echo "$ID.$HOST" | md5)
-					if [ -z "$(psql -tAc "\\du \"$ID\"" postgres pgsql)" ]; then echo "CREATE USER \"$ID\";"; fi | psql postgres pgsql -q
+					if [ -z "$(/usr/local/bin/psql -tAc "\\du \"$ID\"" postgres pgsql)" ]; then echo "CREATE USER \"$ID\";"; fi | /usr/local/bin/psql postgres pgsql -q
 					{
 						echo 'BEGIN;'
-						[ -z "$(psql -tAc "\\du access" "$ID" pgsql)" ] && echo "CREATE GROUP access;"
+						[ -z "$(/usr/local/bin/psql -tAc "\\du access" "$ID" pgsql)" ] && echo "CREATE GROUP access;"
 						cat <<-EOF
 							ALTER USER "$ID" ENCRYPTED PASSWORD '$PASSWORD';
 							GRANT access TO "$ID";
 							GRANT ALL ON DATABASE "$ID" TO access;
 							GRANT ALL ON SCHEMA public TO access;
 						EOF
-						psql "$ID" pgsql -F\  -Atc '\d' | while read schema table dummy; do echo "GRANT ALL ON TABLE \"$schema\".\"$table\" TO access;"; done
+						/usr/local/bin/psql "$ID" pgsql -F\  -Atc '\d' | while read -r schema table dummy; do echo "GRANT ALL ON TABLE \"$schema\".\"$table\" TO access;"; done
 						echo 'COMMIT;'
-					} | psql "$ID" pgsql -q
+					} | /usr/local/bin/psql "$ID" pgsql -q
 					out.info "Value of '${KEY}' key for '${ID}' in '${GROUPNAME}' group has changed!"
 				fi
 				if [ "${PASSWORD}" -a "${KEY}" = "password" ]; then
@@ -691,9 +692,9 @@ domainadd() {
 			;;
 		esac
 		PASSWORD=$(dd "if=/dev/random" count=1 bs=8 | md5)
-		psql -tA -c "CREATE USER \"${ID}\" WITH PASSWORD '${PASSWORD}'" postgres pgsql
-		psql -tA -c "ALTER USER \"${ID}\" WITH PASSWORD '${PASSWORD}'" postgres pgsql
-		psql -tA -c "GRANT ALL ON DATABASE \"${ID}\" TO \"${ID}\"" postgres pgsql
+		/usr/local/bin/psql -tA -c "CREATE USER \"${ID}\" WITH PASSWORD '${PASSWORD}'" postgres pgsql
+		/usr/local/bin/psql -tA -c "ALTER USER \"${ID}\" WITH PASSWORD '${PASSWORD}'" postgres pgsql
+		/usr/local/bin/psql -tA -c "GRANT ALL ON DATABASE \"${ID}\" TO \"${ID}\"" postgres pgsql
 		printf " user='${ID}'" >> ${SERVERSCONF}
 		printf " password='${PASSWORD}'" >> ${SERVERSCONF}
 		printf "${STOP}" >> ${SERVERSCONF}
@@ -821,9 +822,9 @@ Syntax.cluster() {
 }
 Syntax.help() {
 	filtercommand(){
-		echo "$COMMENTEDCOMMANDS" | fgrep -A1 -w $1 | fgrep -oE '\b[a-z]*\)?\b' | tr '\n' ' '
+		echo "$COMMENTEDCOMMANDS" | fgrep -A1 -w $1 | grep -v '#' | fgrep -oE '\b[a-z]*\)?\b' | tr '\n' ' '
 	}
-	[ -d $ACMBSDPATH ] || $0 install notips
+	# [ -d $ACMBSDPATH ] || $0 install notips
 	cat <<-EOF
 		ACMBSD Script $VERSION
 		Commands:
@@ -843,7 +844,7 @@ SCRIPTNAME=acmbsd
 GROUPSNAME='devel test live temp'
 RUNSTR="$0 $@"
 COMMAND=$1
-VERSION=154
+VERSION=160
 
 System.checkPermisson || { System.runAsUser root "$RUNSTR"; exit 1; }
 
@@ -861,9 +862,8 @@ mkdir -p $LOCKDIRPATH
 ACMBSDPATH=/usr/local/$SCRIPTNAME
 ACMCM5PATH=$ACMBSDPATH/acm.cm5
 GEOSHAREDPATH=$ACMBSDPATH/geo
-DBTEMPLATEFILE=$ACMBSDPATH/db-template/acmbsd.backup
+DBTEMPLATEFILE=$ACMBSDPATH/scripts/db-template/acmbsd.backup
 WATCHDOGFLAG=$LOCKDIRPATH/watchdog.pid
-NAMEDCONFFILE=/etc/namedb/named.conf
 PGDATAPATH=/usr/local/pgsql/data
 ACMBSDCOMPFILE=/tmp/acmbsd.cli.completion.list
 PORTSUPDLOGFILE=/tmp/acmbsd.updports.log
@@ -882,11 +882,11 @@ load.module() {
 	return 0
 }
 
-COMMENTEDCOMMANDS=`cat $0 | fgrep -A1 '#COMMAND:' | fgrep -v fgrep`
-COMMANDS=`echo "$COMMENTEDCOMMANDS" | fgrep -oE '\b[a-z]*\)?\b'`
-[ "$COMMAND" ] && echo "$COMMANDS" | fgrep -qw $COMMAND || Syntax.help exit
-
 load.module out base cfg data named mail group_static instance_static zone watchdog report
+
+COMMENTEDCOMMANDS=`cat $0 | fgrep -A1 '#COMMAND:'`
+COMMANDS=`echo "$COMMENTEDCOMMANDS" | grep -v '#' | grep -oE '\b[a-z]*\)?\b'`
+[ "$COMMAND" ] && echo "$COMMANDS" | fgrep -qw $COMMAND || Syntax.help exit
 
 VARS=`eval echo '${@#'$COMMAND'}'`
 parseOpts $VARS
@@ -1104,7 +1104,7 @@ case $COMMAND in
 		case $GROUPNAME in
 			all)
 				out.message "Command '$COMMAND' running" no "[$COMMAND]"
-				Script.update
+				# Script.update
 				for ITEM in `ls $ACMCM5PATH/$BRANCH`; do
 					VERSIONFILE=$ACMCM5PATH/$ITEM/version/version
 					cvsacmcm $ITEM `cat $VERSIONFILE 2> /dev/null || echo 0`
@@ -1206,7 +1206,7 @@ case $COMMAND in
 				Settings info:
 				 	-extip=192.168.1.1 - IP-address that not used by acm.cm already
 				 	-memory=256m - memory for each one instance in group, default '512m'
-				 	-branch=( stable | release | current ) - branch of acm.cm5, default to live group is 'stable' for test and devel groups is 'release'
+				 	-branch=( release | current ) - branch of acm.cm5, default to live group is 'release'
 				 	-type=( minimal | standard | extended | parallel ) - type of group, default 'standard'
 
 				Group type information:
@@ -1319,7 +1319,7 @@ case $COMMAND in
 								else
 									for ITEM in $SETTINGS; do
 										KEY=$(echo ${ITEM#-} | cut -d "=" -f 1)
-										if [ "$KEY" -a "$(echo $CONST | fgrep -wv $KEY)" ]; then
+										if [ "$KEY" ] && [ "$(echo $CONST | fgrep -wv $KEY)" ]; then
 											PASTVALUE=$(zone.get $KEY)
 											VALUE=$(getSettingValue $KEY)
 											if [ "$PASTVALUE" = "$VALUE" ]; then
@@ -1351,11 +1351,11 @@ case $COMMAND in
 				else
 					out.status yellow FAILED
 				fi
-				for GROUPNAME in ${GROUPSPROCESS}; do
-					if [ "$(echo ${GROUPS} | fgrep -w ${GROUPNAME})" ]; then
-						#domainadd
-					fi
-				done
+				# for GROUPNAME in ${GROUPSPROCESS}; do
+				# 	if [ "$(echo ${GROUPS} | fgrep -w ${GROUPNAME})" ]; then
+				# 		domainadd
+				# 	fi
+				# done
 			;;
 			dbuserscheck)
 				GROUPSARG=$(getSettingValue group)
@@ -1439,7 +1439,7 @@ case $COMMAND in
 			Group.create $MODS
 			if [ -z "$SETTINGS" ]; then
 				$MODS.getSettings
-				out.syntax "$COMMAND {groupname} [-branch=(current | release | stable)] [-memory=256m] [-optimize=(deafult | speed | size)] [-extip=10.1.1.1] [-publicip=10.1.1.2] [-type=standard] [-instances={1,9}] [-namedtransfer=10.1.0.1]\n"
+				out.syntax "$COMMAND {groupname} [-branch=(current | release)] [-memory=256m] [-optimize=(deafult | speed | size)] [-extip=10.1.1.1] [-publicip=10.1.1.2] [-type=standard] [-instances={1,9}] [-namedtransfer=10.1.0.1]\n"
 				exit 1
 			fi
 			$MODS.config && exit 0
@@ -1617,7 +1617,7 @@ case $COMMAND in
 	;;
 	#COMMAND:INFREQ
 	preparebsd)
-		load.module conf pkg ipf pgsql
+		load.module conf pkg pgsql
 		echo Prepareing BSD...
 		mail.aliases.check
 		System.fs.dir.create ${ACMBSDPATH}/.ssh
@@ -1642,20 +1642,25 @@ case $COMMAND in
 		base.file.checkLine /etc/rc.conf ntpdate_enable=\"YES\"
 		base.file.checkLine /etc/rc.conf ntpdate_flags 'ntpdate_flags="-b pool.ntp.org europe.pool.ntp.org time.euro.apple.com"'
 
-		conf.install profile.sh /etc/profile
-		conf.install inputrc /etc/inputrc
-		conf.install login.conf /etc/login.conf
-		cap_mkdb /etc/login.conf
+		# conf.install profile.sh /etc/profile
+		# conf.install inputrc /etc/inputrc
+		# conf.install login.conf /etc/login.conf
+		# cap_mkdb /etc/login.conf
 
+		pkg.install cvs- devel/cvs
 		pkg.install bash shells/bash
 		pkg.install screen sysutils/screen
 		conf.install screenrc /usr/local/etc/screenrc
+
 		pkg.install sudo security/sudo
+		conf.install sudoers /usr/local/etc/sudoers
+		chown root:wheel /usr/local/etc/sudoers
+		chmod 0440 /usr/local/etc/sudoers
 
 		pkg.install nano editors/nano
 		conf.install nanorc /usr/local/etc/nanorc
 
-		pkg.install postfix mail/postfix
+		BATCH="YES" POSTFIX_DEFAULT_MTA="YES" pkg.install postfix mail/postfix
 		mail.check
 		pkg.install metamail mail/metamail
 
@@ -1684,7 +1689,7 @@ case $COMMAND in
 
 		pkg.install openjdk openjdk8
 
-		ipf.check
+		pkg.install bind910 dns/bind910
 
 		out.info "Fresh system? Reboot your OS!"
 		echo
@@ -1914,7 +1919,7 @@ case $COMMAND in
 					Group.getData live
 					dbuserscheck $DOMAIN
 					out.message 'Restore database...'
-					printf db.backup | tar xf $BACKUPFILE -O --totals -T - | /usr/local/bin/pg_restore -d $DOMAIN -Oc -U pgsql
+					tar xf $BACKUPFILE -O --totals db.backup | /usr/local/bin/pg_restore -d $DOMAIN -Oc -U pgsql
 #pg_restore -d $DOMAIN -Ovc -U pgsql $BACKUPTMPPATH/db.backup
 					Database.counters.correct $DOMAIN
 					if [ "$ID" ]; then
@@ -2307,10 +2312,10 @@ case $COMMAND in
 	;;
 	#COMMAND:DEVEL
 	vacuum)
-		DBLIST="`psql -tA -F' ' -U pgsql template1 -c 'SELECT datname FROM pg_database WHERE datistemplate = false;'`"
+		DBLIST="`/usr/local/bin/psql -tA -F' ' -U pgsql template1 -c 'SELECT datname FROM pg_database WHERE datistemplate = false;'`"
 		for ITEM in $DBLIST; do
 			echo "$ITEM..."
-			echo 'VACUUM ANALYSE;' | psql -U pgsql "$ITEM"
+			echo 'VACUUM ANALYSE;' | /usr/local/bin/psql -U pgsql "$ITEM"
 		done
 	;;
 	#COMMAND:DEVEL
@@ -2343,7 +2348,7 @@ case $COMMAND in
 	cluster)
 		case ${MODS} in
 			activate)
-				base.file.checkLine /etc/inetd.conf "^csync2*" "csync2 stream tcp nowait root /usr/local/sbin/csync2 csync2 -i"
+				base.file.checkLine /etc/inetd.conf "^csync2*" "csync2 stream tcp nowait root /usr/local/sbin/csync2 csync2 -i -l"
 				base.file.checkLine /etc/rc.conf inetd_enable=\"YES\"
 				base.file.checkLine /etc/services "^csync2*" "csync2		30865/tcp"
 				/etc/rc.d/inetd stop
@@ -2354,7 +2359,7 @@ case $COMMAND in
 				ENABLE=`getSettingValue enable`
 				test -z "$ENABLE" && Syntax.cluster && exit 1
 				if [ "$ENABLE" = true -o "$ENABLE" = yes ]; then
-					base.file.checkLine /etc/crontab csync2 "`csync.crontab`"
+					base.file.checkLine /etc/crontab csync "`csync.crontab`"
 					/etc/rc.d/cron restart
 				fi
 				if [ "$ENABLE" = false -o "$ENABLE" = no ]; then
@@ -2401,7 +2406,7 @@ case $COMMAND in
 					EOF
 				}
 				# echo "`cluster_forget_query`"
-				sqlite /var/db/csync2/$HOSTNAME.db "`cluster_forget_query`"
+				sqlite3 /var/db/csync2/$HOSTNAME.db3 "`cluster_forget_query`"
 			;;
 			localadd)
 				HOST=`getSettingValue host`

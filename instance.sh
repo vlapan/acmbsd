@@ -84,38 +84,28 @@ THIS.remove() {
 THIS.openToPublic() {
 	test "$($THIS_GROUPNAME.getExtIP)" || return 1
 	out.message "Opening 'THIS' to internet..." waitstatus
-	cat /etc/ipf/ipnat.conf | sed -l "/THIS/d" > /tmp/ipnat.conf && mv /tmp/ipnat.conf /etc/ipf
-	for IP in $($THIS_GROUPNAME.getExtIP | tr ',' ' '); do
-		EXTINTERFACE=$(Network.getInterfaceByIP "${IP}")
-		[ -z "$EXTINTERFACE" ] && continue
-		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 80 -> ${THIS_INTIP} port 14080 round-robin # THIS" >> /etc/ipf/ipnat.conf
-		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 443 -> ${THIS_INTIP} port 14443 round-robin # THIS" >> /etc/ipf/ipnat.conf
-		echo "rdr ${EXTINTERFACE} ${IP}/255.255.255.255 port 14022 -> ${THIS_INTIP} port 14022 round-robin # THIS" >> /etc/ipf/ipnat.conf
-		echo "rdr lo0 ${IP}/255.255.255.255 port 80 -> ${THIS_INTIP} port 14080 round-robin # THIS" >> /etc/ipf/ipnat.conf
-		echo "rdr lo0 ${IP}/255.255.255.255 port 443 -> ${THIS_INTIP} port 14443 round-robin # THIS" >> /etc/ipf/ipnat.conf
-		echo "rdr lo0 ${IP}/255.255.255.255 port 14022 -> ${THIS_INTIP} port 14022 round-robin # THIS" >> /etc/ipf/ipnat.conf
-	done
+
+	cat /usr/local/etc/acmbsd-instance-list | sed -l "/${THIS_INTIP}/d" > /tmp/acmbsd-instance-list && mv /tmp/acmbsd-instance-list /usr/local/etc/acmbsd-instance-list
+	echo "${THIS_INTIP}" >> /usr/local/etc/acmbsd-instance-list
+
 	out.status green DONE
 	THIS.reloadIPNAT
 	return 0
 }
 THIS.closeFromPublic() {
 	out.message "Closing 'THIS' from internet..." waitstatus
-	cat /etc/ipf/ipnat.conf | sed -l "/THIS/d" > /tmp/ipnat.conf && mv /tmp/ipnat.conf /etc/ipf
+
+	cat /usr/local/etc/acmbsd-instance-list | sed -l "/${THIS_INTIP}/d" > /tmp/acmbsd-instance-list && mv /tmp/acmbsd-instance-list /usr/local/etc/acmbsd-instance-list
+
 	out.status green DONE
 	THIS.reloadIPNAT
 	return 0
 }
 THIS.isPublic() {
-	cat /etc/ipf/ipnat.conf | fgrep -wq THIS && return 0 || return 1
+	cat /usr/local/etc/acmbsd-instance-list | fgrep -wq ${THIS_INTIP} && return 0 || return 1
 }
 THIS.reloadIPNAT(){
-	out.message 'Reloading ipnat rules...' waitstatus
-	if /etc/rc.d/ipnat reload > /dev/null 2>&1; then
-		out.status green DONE
-	else
-		out.status red ERROR
-	fi
+	/usr/local/etc/ipfw.sh
 }
 THIS.setHierarchy() {
 	echo -n "Check user 'THIS'..."
@@ -147,7 +137,7 @@ THIS.getStartTime() {
 THIS.startDaemon() {
 	THIS.setStartTime
 	System.fs.dir.create ${THIS_GROUPLOGS} > /dev/null 2>&1
-	local PROGEXEC="java -server -Xfuture -Xcheck:jni"
+	local PROGEXEC="java -server"
 	test "`${THIS_GROUPNAME}.getEA`" = enable && PROGEXEC="$PROGEXEC -ea"
 	local PUBLIC=`${THIS_GROUPNAME}.getField PUBLIC`
 	local AXIOMDIR=`Java.classpath ${PUBLIC}/axiom`

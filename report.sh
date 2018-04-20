@@ -47,7 +47,7 @@ Report.domains() {
 		fi
 		Print.owners() {
 			SQL="SELECT login, email FROM umUserAccounts JOIN umUserGroups USING(userId) WHERE groupId='def.supervisor'"
-			psql -tA -F' ' -c "$SQL" $DOMAIN pgsql | while read DOMAINLOGIN DOMAINEMAIL; do
+			/usr/local/bin/psql -tA -F' ' -c "$SQL" $DOMAIN pgsql | while read DOMAINLOGIN DOMAINEMAIL; do
 				DOMAINEMAIL=`echo $DOMAINEMAIL | egrep '([[:alnum:]_.]+@[[:alnum:]_]+?\.[[:alpha:].]{2,6})' || printf -`
 				printf "$DOMAINLOGIN ($DOMAINEMAIL)|"
 			done
@@ -149,8 +149,8 @@ Report.ipnat() {
 Report.system() {
 	OSUPTIME=$(/usr/bin/uptime | cut -d',' -f1 | sed 's/  / /g' | tr ' ' ',' | cut -d',' -f4-5 | tr ',' ' ')
 	OSLOAD=$(System.status.getLoadAvg)
-	JAVAVERSION=$(/usr/sbin/pkg_info | grep openjdk | cut -d' ' -f1)
-	POSTGRESQLVERSION=$(/usr/sbin/pkg_info | grep postgresql-server | cut -d'-' -f3 | cut -d' ' -f1)
+	JAVAVERSION=$(/usr/sbin/pkg info | grep openjdk | cut -d' ' -f1)
+	POSTGRESQLVERSION=$(/usr/sbin/pkg info | grep postgresql-server | cut -d'-' -f3 | cut -d' ' -f1)
 
 	Print.branchVersions() {
 		for ITEM in `ls $ACMCM5PATH/$BRANCH`; do

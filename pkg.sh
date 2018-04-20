@@ -5,17 +5,15 @@
 #ARG3: $3 - function name
 pkg.install() {
 	out.message "Check for $1..." waitstatus
-	if pkg info $1-*; then
+	if pkg info "$1*" > /dev/null 2>&1; then
 		out.status green FOUND
 	else
 		out.status yellow 'NOT FOUND'
 		out.message "Installing $1..."
 		pkg install -y $2
 		test "$3" && eval "`$3`"
-		make clean
 		out.message "Check for $1..." waitstatus
-		PKGINFO=`pkg_info`
-		if pkg_info -Eq $1-*; then
+		if pkg info "$1*" > /dev/null 2>&1; then
 			out.status green FOUND
 		else
 			out.status red ERROR

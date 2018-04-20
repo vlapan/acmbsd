@@ -126,8 +126,8 @@ Group.default.ea() {
 	echo $1 | fgrep -qw live && echo disable || echo enable
 }
 
-Group.default.branch(){
-	echo $1 | fgrep -qw live && echo stable || echo release
+Group.default.branch() {
+	echo $1 | fgrep -qw live && echo release || echo current
 }
 
 Group.reset() {
@@ -147,7 +147,7 @@ Group.isGroup() {
 
 #TODO: stale
 Group.isBranch() {
-	echo stable release current | fgrep -qw $1 && return 0 || return 1
+	echo release current | fgrep -qw $1 && return 0 || return 1
 }
 
 Group.isLogLevel() {
