@@ -1648,48 +1648,19 @@ case $COMMAND in
 		# cap_mkdb /etc/login.conf
 
 		pkg.install cvs- devel/cvs
-		pkg.install bash shells/bash
-		pkg.install screen sysutils/screen
 		conf.install screenrc /usr/local/etc/screenrc
 
-		pkg.install sudo security/sudo
 		conf.install sudoers /usr/local/etc/sudoers
 		chown root:wheel /usr/local/etc/sudoers
 		chmod 0440 /usr/local/etc/sudoers
 
-		pkg.install nano editors/nano
 		conf.install nanorc /usr/local/etc/nanorc
 
 		BATCH="YES" POSTFIX_DEFAULT_MTA="YES" pkg.install postfix mail/postfix
 		mail.check
-		pkg.install metamail mail/metamail
 
 		pgsql.check
 		csync.check
-
-		pkg.install curl ftp/curl
-		pkg.install rsync net/rsync
-		pkg.install rlwrap devel/rlwrap
-		pkg.install elinks www/elinks
-
-		pkg.install xtail misc/xtail
-		pkg.install xmlstarlet textproc/xmlstarlet
-		pkg.install ncdu sysutils/ncdu
-		pkg.install tinc security/tinc
-		pkg.install mtr-nox11 net/mtr-nox11
-		pkg.install ack textproc/ack
-		pkg.install smartmontools sysutils/smartmontools
-		pkg.install cpuflags devel/cpuflags
-		pkg.install ipcalc net-mgmt/ipcalc
-		pkg.install trafshow net/trafshow
-
-		#TODO: there is no use for them yet, check these ports
-		pkg.install host-setup sysutils/host-setup
-		pkg.install sysrc sysutils/sysrc
-
-		pkg.install openjdk openjdk8
-
-		pkg.install bind910 dns/bind910
 
 		out.info "Fresh system? Reboot your OS!"
 		echo
