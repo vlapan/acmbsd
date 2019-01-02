@@ -61,15 +61,7 @@ mail.sendfile() {
 
 mail.check() {
 	mail.aliases.refresh
-
-	base.file.checkLine /etc/rc.conf sendmail_enable=\"NO\"
-	base.file.checkLine /etc/rc.conf sendmail_submit_enable=\"NO\"
-	base.file.checkLine /etc/rc.conf sendmail_outbound_enable=\"NO\"
-	base.file.checkLine /etc/rc.conf sendmail_msp_queue_enable=\"NO\"
-	base.file.checkLine /etc/rc.conf postfix_enable=\"YES\"
-
-	/usr/local/etc/rc.d/postfix stop
-	/usr/local/etc/rc.d/postfix start
+	myx.common setup/postfixMailer
 }
 
 #out.message 'mail: module loaded'
