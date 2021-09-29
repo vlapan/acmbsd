@@ -2,8 +2,9 @@
 
 mail.aliases.refresh() {
 	echo -n Refreshing aliases...
-	rm -f /etc/aliases.db
+	# rm -f /etc/aliases.db
 	newaliases
+	postalias /etc/aliases
 	out.status green DONE
 }
 
